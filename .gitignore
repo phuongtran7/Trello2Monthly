@@ -7,6 +7,12 @@
 *.userosscache
 *.sln.docstates
 
+# Trello API key file
+Secrets.h
+
+# JSON
+*.json
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
