@@ -16,14 +16,14 @@ struct boards_info
 	string_t id;
 };
 
-void get_active_boards()
+string_t get_active_boards()
 {
-	auto file_stream = std::make_shared<ostream>();
-
+	const auto file_stream_board = std::make_shared<ostream>();
 	// Open stream to output file.
-	pplx::task<void> requestTask = fstream::open_ostream(U("results.json")).then([=](ostream outFile)
+	pplx::task<string_t> requestTask = fstream::open_ostream(U("boards.json")).then([=](const ostream out_file)
 	{
-		*file_stream = outFile;
+		*file_stream_board = out_file;
+		
 
 		// Create http_client to send the request.
 		http_client client(U("https://api.trello.com"));
@@ -35,25 +35,26 @@ void get_active_boards()
 
 		return client.request(methods::GET, builder.to_string());
 	})
-
 		// Handle response headers arriving.
 		.then([=](http_response response)
 	{
-		auto return_val = response.extract_json().get();
 		printf("Received response status code:%u\n", response.status_code());
 
-		// Write response body into the file.
-		auto _discard_ = response.body().read_to_end(file_stream->streambuf()).get();
-		// Close the file stream.
-		file_stream->close().get();
+		// Extract JSON out of the response
+		auto extracted_json = response.extract_json().get();
 
-		return return_val;
+		// Write back to file
+		file_stream_board->print(extracted_json.serialize()).get();
+	
+		return extracted_json;
 	})
-
+		// parse JSON
 		.then([=](json::value json_data)
 	{
+
+		file_stream_board->close().get();
+
 		std::vector<boards_info> list_of_open_boards;
-		// parse JSON
 		auto data_array = json_data.as_array();
 
 		std::cout << "Get array of all boards\n";
@@ -91,10 +92,72 @@ void get_active_boards()
 
 		.then([=](std::vector<boards_info> input)
 	{
-		for (auto boards : input)
+		//for (const auto& boards : input)
+		for (auto i = 0; i < input.size(); ++i)
 		{
-			std::wcout << "Board: " << boards.name << ", ID: " << boards.id << " is open.\n";
+			std::wcout << "[" << i << "]" " Board: " << input.at(i).name << ", ID: " << input.at(i).id << " is open.\n";
 		}
+
+		std::cout << "Please enter board number you wish to convert to TEX: ";
+
+		int choice;
+		std::cin >> choice;
+
+
+		// Return the chosen board ID
+		return input.at(choice).id;
+	});
+
+	// Wait for all the outstanding I/O to complete and handle any exceptions
+	try
+	{
+		requestTask.wait();
+	}
+	catch (const std::exception &e)
+	{
+		printf("Error exception:%s\n", e.what());
+	}
+	return requestTask.get();
+}
+
+void get_lists(const string_t board_id)
+{
+	const auto file_stream_list = std::make_shared<ostream>();
+	// Open stream to output file.
+	pplx::task<void> requestTask = fstream::open_ostream(U("lists.json")).then([=](ostream outFile)
+	{
+		*file_stream_list = outFile;
+
+		// Create http_client to send the request.
+		http_client client(U("https://api.trello.com"));
+
+		// Build request URI and start the request.
+		uri_builder builder;
+		builder.set_path(U("/1/boards/"));
+		builder.append_path(board_id);
+		builder.append_path(U("/lists"));
+		builder.append_path(trello_secrect);
+		
+		return client.request(methods::GET, builder.to_string());
+	})
+
+		// Handle response headers arriving.
+		.then([=](http_response response)
+	{
+		printf("Received response status code:%u\n", response.status_code());
+
+		// Extract JSON out of the response
+		auto extracted_json = response.extract_json().get();
+
+		// Write back to file
+		file_stream_list->print(extracted_json.serialize()).get();
+
+		return extracted_json;
+	})
+		// parse JSON
+		.then([=](json::value json_data)
+	{
+
 	});
 
 	// Wait for all the outstanding I/O to complete and handle any exceptions
@@ -110,6 +173,7 @@ void get_active_boards()
 
 int main(int argc, char* argv[])
 {
-	get_active_boards();
+	const auto board_id = get_active_boards();
+	get_lists(board_id);
 	return 0;
 }
