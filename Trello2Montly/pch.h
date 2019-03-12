@@ -14,5 +14,6 @@
 
 #include <cpprest/http_client.h>
 #include <cpprest/filestream.h>
+#include "rapidjson/reader.h"
 
 #endif //PCH_H
