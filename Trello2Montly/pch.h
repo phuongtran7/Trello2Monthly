@@ -6,5 +6,6 @@
 
 #include <cpprest/http_client.h>
 #include <cpprest/filestream.h>
+#include "Secrets.h"
 
 #endif //PCH_H
