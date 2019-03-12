@@ -10,8 +10,6 @@ using namespace web::http;                  // Common HTTP functionality
 using namespace web::http::client;          // HTTP client features
 using namespace concurrency::streams;       // Asynchronous streams
 
-using namespace rapidjson;
-
 struct boards_info
 {
 	string_t name;
