@@ -3,7 +3,6 @@
 
 #include "pch.h"
 
-
 using namespace utility;                    // Common utilities like string conversions
 using namespace web;                        // Common features like URIs.
 using namespace web::http;                  // Common HTTP functionality
@@ -59,15 +58,15 @@ std::string make_header(const std::string& date_string)
 		"\\title{Monthly Status Report}\n"
 		"\\author{Phuong Tran}\n";
 
-		header += "\\date";
-		header += "{";
-		header += date_string;
-		header += "}\n";
-		header += "\n";
-		header += "\\begin{document}\n";
-		header += "\\newpage\n";
-		header += "\\maketitle\n";
-		return header;
+	header += "\\date";
+	header += "{";
+	header += date_string;
+	header += "}\n";
+	header += "\n";
+	header += "\\begin{document}\n";
+	header += "\\newpage\n";
+	header += "\\maketitle\n";
+	return header;
 }
 
 string_t get_active_boards()
@@ -220,7 +219,7 @@ std::vector<list_info> get_lists(const string_t& board_id)
 				{
 					temp_list.id = iter_inner->second.as_string();
 				}
-				if(iter_inner->first == U("name"))
+				if (iter_inner->first == U("name"))
 				{
 					temp_list.name = iter_inner->second.as_string();
 				}
@@ -407,6 +406,20 @@ std::vector<string_t> get_labels(const string_t& board_id)
 	return request_task.get();
 }
 
+// Get all the labels that are used by the cards.
+// As latex is really picky about empty bullet point elements so this is done to make sure
+// that there is at least a card that was tagged with the label in order to make a "\subsubsection"
+// Also, due to the fact that labels are defined per board not per list so we cannot get label for specific list
+std::unordered_set<string_t> get_using_label(std::vector<card_info> cards)
+{
+	std::unordered_set<string_t> unique_labels;
+	for (const auto& card : cards)
+	{
+		unique_labels.insert(card.label);
+	}
+	return unique_labels;
+}
+
 int main(int argc, char* argv[])
 {
 	auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
@@ -445,32 +458,41 @@ int main(int argc, char* argv[])
 		// Get the cards in this list with this label
 		auto cards = get_card(list.id);
 
+		// Get only the labels that the cards in this list use
+		auto available_lable = get_using_label(cards);
+
 		// Loop through all the labels
 		for (const auto& label : labels)
 		{
-			auto label_string = fmt::format("\\subsubsection{{{}}}", conversions::to_utf8string(label));
-			file->info(label_string);
-
-			file->info("\\begin{itemize}");
-
-			// Loop through all the card to put it into approriate label
-			for (const auto& card : cards)
+			// Check whether the label is used in any of the card in this list
+			if (available_lable.find(label) != available_lable.end())
 			{
-				// If the card is tag with the same label then put it here.
-				if (conversions::to_utf8string(card.label) == conversions::to_utf8string(label))
+				auto label_string = fmt::format("\\subsubsection{{{}}}", conversions::to_utf8string(label));
+				file->info(label_string);
+
+				file->info("\\begin{itemize}");
+
+				// Loop through all the card to put it into approriate label
+				for (const auto& card : cards)
 				{
-					auto temp_string = fmt::format("	\\item {}", conversions::to_utf8string(card.name));
-					file->info(temp_string);
+					// If the card is tag with the same label then put it here.
+					if (conversions::to_utf8string(card.label) == conversions::to_utf8string(label))
+					{
+						auto temp_string = fmt::format("	\\item {}", conversions::to_utf8string(card.name));
+						file->info(temp_string);
+					}
 				}
+
+				file->info("\\end{itemize}");
 			}
-
-			file->info("\\end{itemize}");
+			
 		}
-
-		
 	}
 
 	// Finish writing file
 	file->info("\\end{document}");
+
+	// Convert to PDF
+	system("pdflatex \"Monthly Status Report.tex\"");
 	return 0;
 }
