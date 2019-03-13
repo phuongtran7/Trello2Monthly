@@ -119,21 +119,21 @@ string_t get_active_boards()
 			auto data_obj = data.as_object();
 			boards_info temp;
 			auto board_is_close = false;
-			for (auto iter_inner = data_obj.cbegin(); iter_inner != data_obj.cend(); ++iter_inner)
+			for (const auto& iter_inner : data_obj)
 			{
-				if (iter_inner->first == U("name"))
+				if (iter_inner.first == U("name"))
 				{
-					temp.name = iter_inner->second.as_string();
+					temp.name = iter_inner.second.as_string();
 				}
 
-				if (iter_inner->first == U("closed"))
+				if (iter_inner.first == U("closed"))
 				{
-					board_is_close = iter_inner->second.as_bool();
+					board_is_close = iter_inner.second.as_bool();
 				}
 
-				if (iter_inner->first == U("id"))
+				if (iter_inner.first == U("id"))
 				{
-					temp.id = iter_inner->second.as_string();
+					temp.id = iter_inner.second.as_string();
 				}
 			}
 
@@ -148,7 +148,7 @@ string_t get_active_boards()
 		.then([=](std::vector<boards_info> input)
 	{
 		//for (const auto& boards : input)
-		for (auto i = 0; i < input.size(); ++i)
+		for (size_t i = 0; i < input.size(); ++i)
 		{
 			console->info("[{}] board: {} with ID: {} is active.", i, conversions::to_utf8string(input.at(i).name), conversions::to_utf8string(input.at(i).id));
 		}
@@ -221,15 +221,15 @@ std::vector<list_info> get_lists(const string_t& board_id)
 		{
 			list_info temp_list;
 			const auto& data_obj = list.as_object();
-			for (auto iter_inner = data_obj.cbegin(); iter_inner != data_obj.cend(); ++iter_inner)
+			for (const auto& iter_inner : data_obj)
 			{
-				if (iter_inner->first == U("id"))
+				if (iter_inner.first == U("id"))
 				{
-					temp_list.id = iter_inner->second.as_string();
+					temp_list.id = iter_inner.second.as_string();
 				}
-				if (iter_inner->first == U("name"))
+				if (iter_inner.first == U("name"))
 				{
-					temp_list.name = iter_inner->second.as_string();
+					temp_list.name = iter_inner.second.as_string();
 				}
 			}
 			list_id.emplace_back(temp_list);
@@ -319,11 +319,11 @@ std::vector<card_info> get_card(const string_t& list_id)
 					{
 						const auto& data = label.as_object();
 						// Loop through all the fields each of label has
-						for (auto iterator = data.cbegin(); iterator != data.cend(); ++iterator)
+						for (const auto& iterator : data)
 						{
-							if (iterator->first == U("name"))
+							if (iterator.first == U("name"))
 							{
-								temp.label = iterator->second.as_string();
+								temp.label = iterator.second.as_string();
 							}
 						}
 					}
@@ -394,11 +394,11 @@ std::vector<string_t> get_labels(const string_t& board_id)
 		for (const auto& label : data_array)
 		{
 			const auto& data_obj = label.as_object();
-			for (auto iter_inner = data_obj.cbegin(); iter_inner != data_obj.cend(); ++iter_inner)
+			for (const auto& iter_inner : data_obj)
 			{
-				if (iter_inner->first == U("name"))
+				if (iter_inner.first == U("name"))
 				{
-					labels.emplace_back(iter_inner->second.as_string());
+					labels.emplace_back(iter_inner.second.as_string());
 				}
 			}
 		}
