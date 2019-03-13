@@ -71,6 +71,7 @@ std::string make_header(const std::string& date_string)
 	header += "\\begin{document}\n";
 	header += "\\newpage\n";
 	header += "\\maketitle\n";
+
 	return header;
 }
 
@@ -506,7 +507,6 @@ int main(int argc, char* argv[])
 
 				file->info("\\end{itemize}");
 			}
-			
 		}
 
 		// Write hour breakdown section
