@@ -465,19 +465,18 @@ int main(int argc, char* argv[])
 		auto section_string = fmt::format("\\section{{{}}}", conversions::to_utf8string(list.name));
 		file->info(section_string);
 
-		file->info("\\subsection{General Development}");
-
 		// Get the cards in this list with this label
 		auto cards = get_card(list.id);
 
 		// Get only the labels that the cards in this list use
 		auto available_lable = get_using_label(cards);
 
+		file->info("\\subsection{General Development}");
 		// Loop through all the labels
 		for (const auto& label : labels)
 		{
-			// Check whether the label is used in any of the card in this list
-			if (available_lable.find(label) != available_lable.end())
+			// Check whether the label is used in any of the card in this list and it's not the "Hour Breakdown" label as that label will be used later
+			if (available_lable.find(label) != available_lable.end() && conversions::to_utf8string(label) != "Hour Breakdown")
 			{
 				auto label_string = fmt::format("\\subsubsection{{{}}}", conversions::to_utf8string(label));
 				file->info(label_string);
@@ -498,6 +497,18 @@ int main(int argc, char* argv[])
 				file->info("\\end{itemize}");
 			}
 			
+		}
+
+		// Write hour breakdown section
+		file->info("\\subsection{Hour Breakdown}");
+
+		for (const auto& card : cards)
+		{
+			// If the card is tag with the same label then put it here.
+			if (conversions::to_utf8string(card.label) == "Hour Breakdown")
+			{
+				file->info(conversions::to_utf8string(card.name));
+			}
 		}
 	}
 
