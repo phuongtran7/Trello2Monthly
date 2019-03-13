@@ -6,6 +6,8 @@
 
 #include <cpprest/http_client.h>
 #include <cpprest/filestream.h>
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
 #include "Secrets.h"
 
 #endif //PCH_H

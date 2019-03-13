@@ -3,6 +3,8 @@
 
 #include "pch.h"
 
+std::shared_ptr<spdlog::logger> console = nullptr;
+
 using namespace utility;                    // Common utilities like string conversions
 using namespace web;                        // Common features like URIs.
 using namespace web::http;                  // Common HTTP functionality
@@ -42,7 +44,7 @@ string_t get_active_boards()
 		// Handle response headers arriving.
 		.then([=](http_response response)
 	{
-		printf("Received response status code from Boards querry:%u\n", response.status_code());
+		console->info("Received response status code from Boards querry: {}.", response.status_code());
 
 		// Extract JSON out of the response
 		auto extracted_json = response.extract_json().get();
@@ -60,9 +62,6 @@ string_t get_active_boards()
 
 		std::vector<boards_info> list_of_open_boards;
 		auto data_array = json_data.as_array();
-
-		std::cout << "Get array of all boards\n";
-
 		for (auto data : data_array)
 		{
 			auto data_obj = data.as_object();
@@ -97,12 +96,12 @@ string_t get_active_boards()
 		.then([=](std::vector<boards_info> input)
 	{
 		//for (const auto& boards : input)
-		for (auto i = 0;input.size() > i; ++i)
+		for (auto i = 0; i < input.size(); ++i)
 		{
-			std::wcout << "[" << i << "]" " Board: " << input.at(i).name << ", ID: " << input.at(i).id << " is open.\n";
+			console->info("[{}] board: {} with ID: {} is active.", i, conversions::to_utf8string(input.at(i).name), conversions::to_utf8string(input.at(i).id));
 		}
 
-		std::cout << "Please enter board number you wish to convert to TEX: ";
+		console->info("Please enter board number you wish to convert to TEX:");
 
 		int choice;
 		std::cin >> choice;
@@ -119,7 +118,7 @@ string_t get_active_boards()
 	}
 	catch (const std::exception &e)
 	{
-		printf("Error exception:%s\n", e.what());
+		console->critical("Error exception: {}", e.what());
 	}
 	return request_task.get();
 }
@@ -148,7 +147,7 @@ std::vector<string_t> get_lists(const string_t& board_id)
 		// Handle response headers arriving.
 		.then([=](http_response response)
 	{
-		printf("Received response status code from List querry:%u\n", response.status_code());
+		console->info("Received response status code from List querry: {}.", response.status_code());
 
 		// Extract JSON out of the response
 		auto extracted_json = response.extract_json().get();
@@ -186,7 +185,7 @@ std::vector<string_t> get_lists(const string_t& board_id)
 	}
 	catch (const std::exception &e)
 	{
-		printf("Error exception:%s\n", e.what());
+		console->critical("Error exception: {}", e.what());
 	}
 	return request_task.get();
 }
@@ -196,7 +195,7 @@ std::vector<card_info> get_card(const string_t& list_id)
 {
 	const string_t file_name = list_id + U("_cards.json");
 
-		const auto file_stream_card = std::make_shared<ostream>();
+	const auto file_stream_card = std::make_shared<ostream>();
 
 	// Open stream to output file.
 	pplx::task<std::vector<card_info>> request_task = fstream::open_ostream(file_name).then([=](const ostream out_file)
@@ -220,7 +219,7 @@ std::vector<card_info> get_card(const string_t& list_id)
 		// Handle response headers arriving.
 		.then([=](http_response response)
 	{
-		printf("Received response status code from Card querry:%u\n", response.status_code());
+		console->info("Received response status code from Card querry: {}.", response.status_code());
 
 		// Extract JSON out of the response
 		auto extracted_json = response.extract_json().get();
@@ -281,7 +280,7 @@ std::vector<card_info> get_card(const string_t& list_id)
 	}
 	catch (const std::exception &e)
 	{
-		printf("Error exception:%s\n", e.what());
+		console->critical("Error exception: {}.", e.what());
 	}
 	return request_task.get();
 }
@@ -312,7 +311,7 @@ std::vector<string_t> get_labels(const string_t& board_id)
 		// Handle response headers arriving.
 		.then([=](http_response response)
 	{
-		printf("Received response status code from Label querry:%u\n", response.status_code());
+		console->info("Received response status code from Label querry: {}", response.status_code());
 
 		// Extract JSON out of the response
 		auto extracted_json = response.extract_json().get();
@@ -350,13 +349,19 @@ std::vector<string_t> get_labels(const string_t& board_id)
 	}
 	catch (const std::exception &e)
 	{
-		printf("Error exception:%s\n", e.what());
+		console->critical("Error exception: {}", e.what());
 	}
 	return request_task.get();
 }
 
 int main(int argc, char* argv[])
 {
+	auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+	console_sink->set_level(spdlog::level::info);
+	console_sink->set_pattern("[%^%l%$] %v");
+
+	console = std::make_shared<spdlog::logger>("console_sink", console_sink);
+
 	const auto board_id = get_active_boards();
 	const auto lables = get_labels(board_id);
 	const auto lists = get_lists(board_id);
