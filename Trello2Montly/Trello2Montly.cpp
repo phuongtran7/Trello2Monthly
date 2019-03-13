@@ -27,6 +27,10 @@ struct card_info
 	string_t label;
 };
 
+// Store the list of JSON debug file so that they can be delete automatically later
+std::vector<string_t> file_to_delete;
+
+// Console output
 std::shared_ptr<spdlog::logger> console = nullptr;
 
 std::string make_header(const std::string& date_string)
@@ -76,6 +80,8 @@ string_t get_active_boards()
 	pplx::task<string_t> request_task = fstream::open_ostream(U("boards.json")).then([=](const ostream out_file)
 	{
 		*file_stream_board = out_file;
+
+		file_to_delete.emplace_back(U("boards.json"));
 
 		// Create http_client to send the request.
 		http_client client(U("https://api.trello.com"));
@@ -177,6 +183,8 @@ std::vector<list_info> get_lists(const string_t& board_id)
 	{
 		*file_stream_list = out_file;
 
+		file_to_delete.emplace_back(U("lists.json"));
+
 		// Create http_client to send the request.
 		http_client client(U("https://api.trello.com"));
 
@@ -245,9 +253,11 @@ std::vector<list_info> get_lists(const string_t& board_id)
 // Get all the cards and its label, within a specific list
 std::vector<card_info> get_card(const string_t& list_id)
 {
-	const string_t file_name = list_id + U("_cards.json");
+	const auto file_name = list_id + U("_cards.json");
 
 	const auto file_stream_card = std::make_shared<ostream>();
+
+	file_to_delete.emplace_back(file_name);
 
 	// Open stream to output file.
 	pplx::task<std::vector<card_info>> request_task = fstream::open_ostream(file_name).then([=](const ostream out_file)
@@ -346,6 +356,8 @@ std::vector<string_t> get_labels(const string_t& board_id)
 	pplx::task<std::vector<string_t>> request_task = fstream::open_ostream(U("labels.json")).then([=](const ostream out_file)
 	{
 		*file_stream_list = out_file;
+
+		file_to_delete.emplace_back(U("labels.json"));
 
 		// Create http_client to send the request.
 		http_client client(U("https://api.trello.com"));
@@ -494,5 +506,15 @@ int main(int argc, char* argv[])
 
 	// Convert to PDF
 	system("pdflatex \"Monthly Status Report.tex\"");
+
+	// Clean up
+	for (const auto& file_name : file_to_delete)
+	{
+		std::remove(conversions::to_utf8string(file_name).c_str()); // delete file
+	}
+	std::remove("Monthly Status Report.aux");
+	std::remove("Monthly Status Report.log");
+	std::remove("Monthly Status Report.out");
+	std::remove("Monthly Status Report.aux");
 	return 0;
 }
