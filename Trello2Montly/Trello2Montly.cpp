@@ -25,7 +25,7 @@ string_t get_active_boards()
 {
 	const auto file_stream_board = std::make_shared<ostream>();
 	// Open stream to output file.
-	pplx::task<string_t> requestTask = fstream::open_ostream(U("boards.json")).then([=](const ostream out_file)
+	pplx::task<string_t> request_task = fstream::open_ostream(U("boards.json")).then([=](const ostream out_file)
 	{
 		*file_stream_board = out_file;
 
@@ -48,6 +48,7 @@ string_t get_active_boards()
 		auto extracted_json = response.extract_json().get();
 
 		// Write back to file
+		// ReSharper disable once CppExpressionWithoutSideEffects
 		file_stream_board->print(extracted_json.serialize()).get();
 
 		return extracted_json;
@@ -96,7 +97,7 @@ string_t get_active_boards()
 		.then([=](std::vector<boards_info> input)
 	{
 		//for (const auto& boards : input)
-		for (auto i = 0; i < input.size(); ++i)
+		for (auto i = 0;input.size() > i; ++i)
 		{
 			std::wcout << "[" << i << "]" " Board: " << input.at(i).name << ", ID: " << input.at(i).id << " is open.\n";
 		}
@@ -113,20 +114,21 @@ string_t get_active_boards()
 	// Wait for all the outstanding I/O to complete and handle any exceptions
 	try
 	{
-		requestTask.wait();
+		// ReSharper disable once CppExpressionWithoutSideEffects
+		request_task.wait();
 	}
 	catch (const std::exception &e)
 	{
 		printf("Error exception:%s\n", e.what());
 	}
-	return requestTask.get();
+	return request_task.get();
 }
 
 std::vector<string_t> get_lists(const string_t& board_id)
 {
 	const auto file_stream_list = std::make_shared<ostream>();
 	// Open stream to output file.
-	pplx::task<std::vector<string_t>> requestTask = fstream::open_ostream(U("lists.json")).then([=](const ostream out_file)
+	pplx::task<std::vector<string_t>> request_task = fstream::open_ostream(U("lists.json")).then([=](const ostream out_file)
 	{
 		*file_stream_list = out_file;
 
@@ -152,6 +154,7 @@ std::vector<string_t> get_lists(const string_t& board_id)
 		auto extracted_json = response.extract_json().get();
 
 		// Write back to file
+		// ReSharper disable once CppExpressionWithoutSideEffects
 		file_stream_list->print(extracted_json.serialize()).get();
 
 		return extracted_json;
@@ -178,31 +181,14 @@ std::vector<string_t> get_lists(const string_t& board_id)
 	// Wait for all the outstanding I/O to complete and handle any exceptions
 	try
 	{
-		requestTask.wait();
+		// ReSharper disable once CppExpressionWithoutSideEffects
+		request_task.wait();
 	}
 	catch (const std::exception &e)
 	{
 		printf("Error exception:%s\n", e.what());
 	}
-	return requestTask.get();
-}
-
-// This will retun a vector of pairs of subsection name and content in that sub section
-// The subsection name should be the label and content should be the cards that has that particular label in the list.
-std::vector<std::tuple<string_t, std::vector<string_t>>> process_cards(std::vector<string_t> labels, std::vector<string_t> list_id)
-{
-	std::vector<std::tuple<string_t, std::vector<string_t>>> return_vector;
-	// Loop through every available list
-	for (auto list : list_id)
-	{
-		// Loop through every labels that the cards in list have
-		for (auto label : labels)
-		{
-
-		}
-	}
-
-	return return_vector;
+	return request_task.get();
 }
 
 // Get all the cards and its label, within a specific list
@@ -213,7 +199,7 @@ std::vector<card_info> get_card(const string_t& list_id)
 		const auto file_stream_card = std::make_shared<ostream>();
 
 	// Open stream to output file.
-	pplx::task<std::vector<card_info>> requestTask = fstream::open_ostream(file_name).then([=](const ostream out_file)
+	pplx::task<std::vector<card_info>> request_task = fstream::open_ostream(file_name).then([=](const ostream out_file)
 
 	{
 		*file_stream_card = out_file;
@@ -240,6 +226,7 @@ std::vector<card_info> get_card(const string_t& list_id)
 		auto extracted_json = response.extract_json().get();
 
 		// Write back to file
+		// ReSharper disable once CppExpressionWithoutSideEffects
 		file_stream_card->print(extracted_json.serialize()).get();
 
 		return extracted_json;
@@ -289,13 +276,14 @@ std::vector<card_info> get_card(const string_t& list_id)
 	// Wait for all the outstanding I/O to complete and handle any exceptions
 	try
 	{
-		requestTask.wait();
+		// ReSharper disable once CppExpressionWithoutSideEffects
+		request_task.wait();
 	}
 	catch (const std::exception &e)
 	{
 		printf("Error exception:%s\n", e.what());
 	}
-	return requestTask.get();
+	return request_task.get();
 }
 
 // The number of subsection in the latex will depends on the number of labels
@@ -304,7 +292,7 @@ std::vector<string_t> get_labels(const string_t& board_id)
 {
 	const auto file_stream_list = std::make_shared<ostream>();
 	// Open stream to output file.
-	pplx::task<std::vector<string_t>> requestTask = fstream::open_ostream(U("labels.json")).then([=](const ostream out_file)
+	pplx::task<std::vector<string_t>> request_task = fstream::open_ostream(U("labels.json")).then([=](const ostream out_file)
 	{
 		*file_stream_list = out_file;
 
@@ -330,6 +318,7 @@ std::vector<string_t> get_labels(const string_t& board_id)
 		auto extracted_json = response.extract_json().get();
 
 		// Write back to file
+		// ReSharper disable once CppExpressionWithoutSideEffects
 		file_stream_list->print(extracted_json.serialize()).get();
 
 		return extracted_json;
@@ -356,13 +345,14 @@ std::vector<string_t> get_labels(const string_t& board_id)
 	// Wait for all the outstanding I/O to complete and handle any exceptions
 	try
 	{
-		requestTask.wait();
+		// ReSharper disable once CppExpressionWithoutSideEffects
+		request_task.wait();
 	}
 	catch (const std::exception &e)
 	{
 		printf("Error exception:%s\n", e.what());
 	}
-	return requestTask.get();
+	return request_task.get();
 }
 
 int main(int argc, char* argv[])
