@@ -16,6 +16,12 @@ struct boards_info
 	string_t id;
 };
 
+struct list_info
+{
+	string_t name;
+	string_t id;
+};
+
 struct card_info
 {
 	string_t name;
@@ -40,7 +46,7 @@ std::string make_header(const std::string& date_string)
 		"\n"
 		"\%More info : https://tex.stackexchange.com/a/136531\n"
 		"\\makeatletter\n"
-		"\\renewcommand{ \\@seccntformat}[1]{\n"
+		"\\renewcommand{\\@seccntformat}[1]{\n"
 		"  \\ifcsname prefix@#1\\endcsname\n"
 		"	\\csname prefix@#1\\endcsname\n"
 		"  \\else\n"
@@ -164,11 +170,11 @@ string_t get_active_boards()
 	return request_task.get();
 }
 
-std::vector<string_t> get_lists(const string_t& board_id)
+std::vector<list_info> get_lists(const string_t& board_id)
 {
 	const auto file_stream_list = std::make_shared<ostream>();
 	// Open stream to output file.
-	pplx::task<std::vector<string_t>> request_task = fstream::open_ostream(U("lists.json")).then([=](const ostream out_file)
+	pplx::task<std::vector<list_info>> request_task = fstream::open_ostream(U("lists.json")).then([=](const ostream out_file)
 	{
 		*file_stream_list = out_file;
 
@@ -202,18 +208,24 @@ std::vector<string_t> get_lists(const string_t& board_id)
 		// parse JSON
 		.then([=](json::value json_data)
 	{
-		std::vector<string_t> list_id;
+		std::vector<list_info> list_id;
 		auto data_array = json_data.as_array();
 		for (const auto& list : data_array)
 		{
+			list_info temp_list;
 			const auto& data_obj = list.as_object();
 			for (auto iter_inner = data_obj.cbegin(); iter_inner != data_obj.cend(); ++iter_inner)
 			{
 				if (iter_inner->first == U("id"))
 				{
-					list_id.emplace_back(iter_inner->second.as_string());
+					temp_list.id = iter_inner->second.as_string();
+				}
+				if(iter_inner->first == U("name"))
+				{
+					temp_list.name = iter_inner->second.as_string();
 				}
 			}
+			list_id.emplace_back(temp_list);
 		}
 		return list_id;
 	});
@@ -375,7 +387,7 @@ std::vector<string_t> get_labels(const string_t& board_id)
 			{
 				if (iter_inner->first == U("name"))
 				{
-					labels.emplace_back(iter_inner->second.serialize());
+					labels.emplace_back(iter_inner->second.as_string());
 				}
 			}
 		}
@@ -404,23 +416,61 @@ int main(int argc, char* argv[])
 	console = std::make_shared<spdlog::logger>("console_sink", console_sink);
 
 	// File sink
-	auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("Monthly.tex", true);
+	auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("Monthly Status Report.tex", true);
 	file_sink->set_level(spdlog::level::info);
 	file_sink->set_pattern("%v");
 
 	auto file = std::make_shared<spdlog::logger>("file_sink", file_sink);
+	file->flush_on(spdlog::level::info);
 
 	console->info("Please enter the month and year for the report.");
-	console->info("For example: December 2012");
+	console->info("For example: August 1997"); // Skynet becomes self-aware.
 
 	std::string input;
 	std::getline(std::cin, input);
 	file->info(make_header(input));
-	file->flush();
 
 	const auto board_id = get_active_boards();
-	const auto lables = get_labels(board_id);
+	const auto labels = get_labels(board_id);
 	const auto lists = get_lists(board_id);
 
+	// Start writing each list as a section
+	for (const auto& list : lists)
+	{
+		auto section_string = fmt::format("\\section{{{}}}", conversions::to_utf8string(list.name));
+		file->info(section_string);
+
+		file->info("\\subsection{General Development}");
+
+		// Get the cards in this list with this label
+		auto cards = get_card(list.id);
+
+		// Loop through all the labels
+		for (const auto& label : labels)
+		{
+			auto label_string = fmt::format("\\subsubsection{{{}}}", conversions::to_utf8string(label));
+			file->info(label_string);
+
+			file->info("\\begin{itemize}");
+
+			// Loop through all the card to put it into approriate label
+			for (const auto& card : cards)
+			{
+				// If the card is tag with the same label then put it here.
+				if (conversions::to_utf8string(card.label) == conversions::to_utf8string(label))
+				{
+					auto temp_string = fmt::format("	\\item {}", conversions::to_utf8string(card.name));
+					file->info(temp_string);
+				}
+			}
+
+			file->info("\\end{itemize}");
+		}
+
+		
+	}
+
+	// Finish writing file
+	file->info("\\end{document}");
 	return 0;
 }
