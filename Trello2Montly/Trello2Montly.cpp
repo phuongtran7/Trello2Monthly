@@ -32,6 +32,7 @@ std::vector<string_t> file_to_delete;
 
 // Console output
 std::shared_ptr<spdlog::logger> console = nullptr;
+std::shared_ptr<spdlog::logger> file = nullptr;
 
 std::string make_header(const std::string& date_string)
 {
@@ -434,19 +435,28 @@ std::unordered_set<string_t> get_using_label(std::vector<card_info> cards)
 
 int main(int argc, char* argv[])
 {
-	auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-	console_sink->set_level(spdlog::level::info);
-	console_sink->set_pattern("[%^%l%$] %v");
+	try
+	{
+		// Console sink
+		auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+		console_sink->set_level(spdlog::level::info);
+		console_sink->set_pattern("[%^%l%$] %v");
 
-	console = std::make_shared<spdlog::logger>("console_sink", console_sink);
+		console = std::make_shared<spdlog::logger>("console_sink", console_sink);
 
-	// File sink
-	auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("Monthly Status Report.tex", true);
-	file_sink->set_level(spdlog::level::info);
-	file_sink->set_pattern("%v");
+		// File sink
+		auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("Monthly Status Report.tex", true);
+		file_sink->set_level(spdlog::level::info);
+		file_sink->set_pattern("%v");
 
-	auto file = std::make_shared<spdlog::logger>("file_sink", file_sink);
-	file->flush_on(spdlog::level::info);
+		file = std::make_shared<spdlog::logger>("file_sink", file_sink);
+		file->flush_on(spdlog::level::info);
+	}
+	catch (const spdlog::spdlog_ex &ex)
+	{
+		std::cout << "Log init failed: " << ex.what() << std::endl;
+		return 1;
+	}
 
 	console->info("Please enter the month and year for the report.");
 	console->info("For example: August 1997"); // Skynet becomes self-aware.
