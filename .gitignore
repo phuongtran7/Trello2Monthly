@@ -13,6 +13,9 @@ Secrets.h
 # JSON
 *.json
 
+# TEX files
+*.tex
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

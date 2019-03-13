@@ -3,7 +3,6 @@
 
 #include "pch.h"
 
-std::shared_ptr<spdlog::logger> console = nullptr;
 
 using namespace utility;                    // Common utilities like string conversions
 using namespace web;                        // Common features like URIs.
@@ -22,6 +21,48 @@ struct card_info
 	string_t name;
 	string_t label;
 };
+
+std::shared_ptr<spdlog::logger> console = nullptr;
+
+std::string make_header(const std::string& date_string)
+{
+	std::string header =
+		"\\documentclass[12pt]{article}\n"
+		"\\usepackage[a4paper, bottom = 1.0in, left = 1.5in, right = 1.5in]{geometry}\n"
+		"\%More info : https://tex.stackexchange.com/a/12408\n"
+		"\\usepackage[hidelinks]{hyperref}\n"
+		"\n"
+		"\%More info : https://tex.stackexchange.com/a/29594\n"
+		"\\usepackage{titling}\n"
+		"\\setlength{\\droptitle}{-10em}\n"
+		"\n"
+		"\\setlength{\\footnotesep}{\\baselineskip}\n"
+		"\n"
+		"\%More info : https://tex.stackexchange.com/a/136531\n"
+		"\\makeatletter\n"
+		"\\renewcommand{ \\@seccntformat}[1]{\n"
+		"  \\ifcsname prefix@#1\\endcsname\n"
+		"	\\csname prefix@#1\\endcsname\n"
+		"  \\else\n"
+		"	\\csname the#1\\endcsname\\quad\n"
+		"  \\fi\n"
+		"  }\n"
+		"\\newcommand\\prefix@section{For the week of }\n"
+		"\\makeatother\n"
+		"\n"
+		"\\title{Monthly Status Report}\n"
+		"\\author{Phuong Tran}\n";
+
+		header += "\\date";
+		header += "{";
+		header += date_string;
+		header += "}\n";
+		header += "\n";
+		header += "\\begin{document}\n";
+		header += "\\newpage\n";
+		header += "\\maketitle\n";
+		return header;
+}
 
 string_t get_active_boards()
 {
@@ -361,6 +402,21 @@ int main(int argc, char* argv[])
 	console_sink->set_pattern("[%^%l%$] %v");
 
 	console = std::make_shared<spdlog::logger>("console_sink", console_sink);
+
+	// File sink
+	auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("Monthly.tex", true);
+	file_sink->set_level(spdlog::level::info);
+	file_sink->set_pattern("%v");
+
+	auto file = std::make_shared<spdlog::logger>("file_sink", file_sink);
+
+	console->info("Please enter the month and year for the report.");
+	console->info("For example: December 2012");
+
+	std::string input;
+	std::getline(std::cin, input);
+	file->info(make_header(input));
+	file->flush();
 
 	const auto board_id = get_active_boards();
 	const auto lables = get_labels(board_id);

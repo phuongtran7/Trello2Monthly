@@ -8,6 +8,8 @@
 #include <cpprest/filestream.h>
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/sinks/basic_file_sink.h"
+
 #include "Secrets.h"
 
 #endif //PCH_H
