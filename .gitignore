@@ -20,6 +20,9 @@ Secrets.h
 *.pdf
 *.synctex.gz
 
+# Word file
+*.docx
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

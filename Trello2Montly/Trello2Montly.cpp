@@ -461,7 +461,9 @@ int main(int argc, char* argv[])
 	file->info("\\end{document}");
 
 	// Convert to PDF
-	system("pdflatex \"Monthly Status Report.tex\"");
+	std::system(R"(pdflatex "Monthly Status Report.tex")");
+
+	std::system(R"(pandoc -s "Monthly Status Report.tex" -o "Monthly Status Report.docx")");
 
 	// Clean up
 	std::remove("Monthly Status Report.aux");
