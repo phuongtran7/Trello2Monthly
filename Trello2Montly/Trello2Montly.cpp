@@ -27,6 +27,8 @@ struct card_info
 	string_t label;
 };
 
+std::string author;
+
 // Store the list of JSON debug file so that they can be delete automatically later
 std::vector<string_t> file_to_delete;
 
@@ -60,9 +62,11 @@ std::string make_header(const std::string& date_string)
 		"\\newcommand\\prefix@section{For the week of }\n"
 		"\\makeatother\n"
 		"\n"
-		"\\title{Monthly Status Report}\n"
-		"\\author{Phuong Tran}\n";
+		"\\title{Monthly Status Report}\n";
 
+	header += "\\author{";
+	header += author;
+	header += "}\n";
 	header += "\\date";
 	header += "{";
 	header += date_string;
@@ -393,6 +397,11 @@ int main(int argc, char* argv[])
 		std::cout << "Log init failed: " << ex.what() << std::endl;
 		return 1;
 	}
+
+	console->info("Please enter name.");
+	console->info("For example: John Connor "); // The Resistance's leader.
+
+	std::getline(std::cin, author);
 
 	console->info("Please enter the month and year for the report.");
 	console->info("For example: August 1997"); // Skynet becomes self-aware.
