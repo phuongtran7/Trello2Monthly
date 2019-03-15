@@ -27,8 +27,6 @@ struct card_info
 	string_t label;
 };
 
-std::string author;
-
 // Store the list of JSON debug file so that they can be delete automatically later
 std::vector<string_t> file_to_delete;
 
@@ -36,7 +34,7 @@ std::vector<string_t> file_to_delete;
 std::shared_ptr<spdlog::logger> console = nullptr;
 std::shared_ptr<spdlog::logger> file = nullptr;
 
-std::string make_header(const std::string& date_string)
+std::string make_header(const std::string& author_string, const std::string& date_string)
 {
 	std::string header =
 		"\\documentclass[12pt]{article}\n"
@@ -65,7 +63,7 @@ std::string make_header(const std::string& date_string)
 		"\\title{Monthly Status Report}\n";
 
 	header += "\\author{";
-	header += author;
+	header += author_string;
 	header += "}\n";
 	header += "\\date";
 	header += "{";
@@ -397,6 +395,8 @@ int main(int argc, char* argv[])
 		std::cout << "Log init failed: " << ex.what() << std::endl;
 		return 1;
 	}
+	std::string author;
+	std::string date;
 
 	console->info("Please enter name.");
 	console->info("For example: John Connor "); // The Resistance's leader.
@@ -406,9 +406,10 @@ int main(int argc, char* argv[])
 	console->info("Please enter the month and year for the report.");
 	console->info("For example: August 1997"); // Skynet becomes self-aware.
 
-	std::string input;
-	std::getline(std::cin, input);
-	file->info(make_header(input));
+	std::getline(std::cin, date);
+
+	// Write header to file
+	file->info(make_header(author, date));
 
 	const auto board_id = get_active_boards();
 	const auto labels = get_labels(board_id);
