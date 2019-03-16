@@ -9,27 +9,28 @@ using namespace web::http;                  // Common HTTP functionality
 using namespace web::http::client;          // HTTP client features
 using namespace concurrency::streams;       // Asynchronous streams
 
-struct boards_info
-{
-	string_t name;
-	string_t id;
-};
-
-struct list_info
-{
-	string_t name;
-	string_t id;
-};
-
-struct card_info
-{
-	string_t name;
-	string_t label;
-};
-
 class monthly
 {
 private:
+	struct boards_info
+	{
+		string_t name;
+		string_t id;
+	};
+
+	struct list_info
+	{
+		string_t name;
+		string_t id;
+	};
+
+	struct card_info
+	{
+		string_t name;
+		string_t label;
+	};
+	string_t trello_secrect_;
+
 	static std::string make_header(const std::string& author_string, const std::string& date_string)
 	{
 		std::string header =
@@ -81,7 +82,7 @@ private:
 		// Build request URI and start the request.
 		uri_builder builder;
 		builder.set_path(U("/1/members/me/boards"));
-		builder.append_path(trello_secrect);
+		builder.append_path(trello_secrect_);
 
 		pplx::task<string_t> request_task = client.request(methods::GET, builder.to_string())
 
@@ -134,7 +135,7 @@ private:
 			//for (const auto& boards : input)
 			for (size_t i = 0; i < input.size(); ++i)
 			{
-				console->info("[{}] board: {} with ID: {} is active.", i, conversions::to_utf8string(input.at(i).name), conversions::to_utf8string(input.at(i).id));
+				console->info("[{}] board: {} is active.", i, conversions::to_utf8string(input.at(i).name), conversions::to_utf8string(input.at(i).id));
 			}
 
 			console->info("Please enter board number you wish to convert to TEX:");
@@ -169,7 +170,7 @@ private:
 		builder.set_path(U("/1/boards/"));
 		builder.append_path(board_id);
 		builder.append_path(U("/lists"));
-		builder.append_path(trello_secrect);
+		builder.append_path(trello_secrect_);
 
 		pplx::task<std::vector<list_info>> request_task = client.request(methods::GET, builder.to_string())
 
@@ -230,7 +231,7 @@ private:
 		builder.set_path(U("/1/lists/"));
 		builder.append_path(list_id);
 		builder.append_path(U("/cards"));
-		builder.append_path(trello_secrect);
+		builder.append_path(trello_secrect_);
 
 		pplx::task<std::vector<card_info>> request_task = client.request(methods::GET, builder.to_string())
 
@@ -298,7 +299,6 @@ private:
 	}
 
 	// The number of subsection in the latex will depends on the number of labels
-	// In this there should be three labels: Boeing 737 Max, S76 Helicopter and Additional Meetings
 	std::vector<string_t> get_labels(const string_t& board_id)
 	{
 		// Create http_client to send the request.
@@ -309,7 +309,7 @@ private:
 		builder.set_path(U("/1/boards/"));
 		builder.append_path(board_id);
 		builder.append_path(U("/labels/"));
-		builder.append_path(trello_secrect);
+		builder.append_path(trello_secrect_);
 
 		pplx::task<std::vector<string_t>> request_task = client.request(methods::GET, builder.to_string())
 
@@ -411,14 +411,13 @@ private:
 			auto trello_secrect = key + token;
 			return trello_secrect;
 		}
-
 		return U("");
 	}
 
 	void process_data(const std::string& author, const std::string& date)
 	{
-		trello_secrect = get_secrects();
-		if (trello_secrect.empty())
+		trello_secrect_ = get_secrects();
+		if (trello_secrect_.empty())
 		{
 			console->critical("Cannot read API keys. Please make sure \"Tokens.txt\" exists.");
 			console->info("Press any key to exit.");
@@ -489,6 +488,7 @@ private:
 		// Convert to PDF
 		std::system(R"(pdflatex "Monthly Status Report.tex")");
 
+		// Convert to word if pandoc is installed
 		std::system(R"(pandoc -s "Monthly Status Report.tex" -o "Monthly Status Report.docx")");
 
 		// Clean up
@@ -498,7 +498,6 @@ private:
 		std::remove("Monthly Status Report.aux");
 	}
 
-	string_t trello_secrect;
 public:
 	monthly()
 	{
@@ -519,7 +518,6 @@ public:
 
 		process_data(author, date);
 	};
-	// Console output
 	std::shared_ptr<spdlog::logger> console = nullptr;
 	std::shared_ptr<spdlog::logger> file = nullptr;
 };
