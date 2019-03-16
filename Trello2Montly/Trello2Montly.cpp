@@ -252,19 +252,19 @@ private:
 			{
 				card_info temp;
 				const auto& data_obj = card.as_object();
-				for (auto iter_inner = data_obj.cbegin(); iter_inner != data_obj.cend(); ++iter_inner)
+				for (const auto& iter_inner : data_obj)
 				{
-					if (iter_inner->first == U("name"))
+					if (iter_inner.first == U("name"))
 					{
-						auto temp_string = iter_inner->second.serialize();
+						auto temp_string = iter_inner.second.serialize();
 						// Trim the double quotes at start and end of the string
 						temp.name = temp_string.substr(1, temp_string.size() - 2);
 					}
 
-					if (iter_inner->first == U("labels"))
+					if (iter_inner.first == U("labels"))
 					{
 						// Loop through all the labels the card has
-						const auto& card_labels = iter_inner->second.as_array();
+						const auto& card_labels = iter_inner.second.as_array();
 						for (auto label : card_labels)
 						{
 							const auto& data = label.as_object();
