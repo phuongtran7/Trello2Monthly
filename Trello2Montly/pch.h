@@ -11,5 +11,6 @@
 #include "spdlog/sinks/basic_file_sink.h"
 #include <unordered_set>
 #include <fstream>
+#include "rapidjson/document.h"
 
 #endif //PCH_H

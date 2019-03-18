@@ -14,20 +14,20 @@ class monthly
 private:
 	struct boards_info
 	{
-		string_t name;
-		string_t id;
+		std::string name;
+		std::string id;
 	};
 
 	struct list_info
 	{
-		string_t name;
-		string_t id;
+		std::string name;
+		std::string id;
 	};
 
 	struct card_info
 	{
-		string_t name;
-		string_t label;
+		std::string name;
+		std::string label;
 	};
 	string_t trello_secrect_;
 
@@ -74,7 +74,7 @@ private:
 		return header;
 	}
 
-	string_t get_active_boards()
+	std::string get_active_boards()
 	{
 		// Create http_client to send the request.
 		http_client client(U("https://api.trello.com"));
@@ -84,7 +84,7 @@ private:
 		builder.set_path(U("/1/members/me/boards"));
 		builder.append_path(trello_secrect_);
 
-		pplx::task<string_t> request_task = client.request(methods::GET, builder.to_string())
+		pplx::task<std::string> request_task = client.request(methods::GET, builder.to_string())
 
 			// Handle response headers arriving.
 			.then([=](http_response response)
@@ -92,41 +92,32 @@ private:
 			console->info("Received response status code from Boards querry: {}.", response.status_code());
 
 			// Extract JSON out of the response
-			return response.extract_json();
+			return response.extract_utf8string();
 		})
 			// parse JSON
-			.then([=](json::value json_data)
+			.then([=](std::string json_data)
 		{
+			rapidjson::Document document;
+			document.Parse(json_data.c_str());
+
 			std::vector<boards_info> list_of_open_boards;
-			auto data_array = json_data.as_array();
-			for (auto data : data_array)
-			{
-				auto data_obj = data.as_object();
-				boards_info temp;
-				auto board_is_close = false;
-				for (const auto& iter_inner : data_obj)
+
+			// Only get the board that the "close" value is false
+			for (const auto& object : document.GetArray()) {
+				if (!object.FindMember("closed")->value.GetBool())
 				{
-					if (iter_inner.first == U("name"))
-					{
-						temp.name = iter_inner.second.as_string();
-					}
-
-					if (iter_inner.first == U("closed"))
-					{
-						board_is_close = iter_inner.second.as_bool();
-					}
-
-					if (iter_inner.first == U("id"))
-					{
-						temp.id = iter_inner.second.as_string();
-					}
-				}
-
-				if (!board_is_close)
-				{
+					boards_info temp;
+					temp.name = object.FindMember("name")->value.GetString();
+					temp.id = object.FindMember("id")->value.GetString();
 					list_of_open_boards.emplace_back(temp);
 				}
 			}
+
+			for (const auto& temp : list_of_open_boards)
+			{
+				console->info("Name: {}, ID: {}", temp.name, temp.id);
+			}
+
 			return list_of_open_boards;
 		})
 
@@ -135,7 +126,7 @@ private:
 			//for (const auto& boards : input)
 			for (size_t i = 0; i < input.size(); ++i)
 			{
-				console->info("[{}] board: {} is active.", i, conversions::to_utf8string(input.at(i).name), conversions::to_utf8string(input.at(i).id));
+				console->info("[{}] board: {} is active.", i, input.at(i).name, input.at(i).id);
 			}
 
 			console->info("Please enter board number you wish to convert to TEX:");
@@ -357,9 +348,9 @@ private:
 	// As latex is really picky about empty bullet point elements so this is done to make sure
 	// that there is at least a card that was tagged with the label in order to make a "\subsubsection"
 	// Also, due to the fact that labels are defined per board not per list so we cannot get label for specific list
-	std::unordered_set<string_t> get_using_label(std::vector<card_info> cards)
+	std::unordered_set<std::string> get_using_label(std::vector<card_info> cards)
 	{
-		std::unordered_set<string_t> unique_labels;
+		std::unordered_set<std::string> unique_labels;
 		for (const auto& card : cards)
 		{
 			unique_labels.insert(card.label);
@@ -426,7 +417,8 @@ private:
 		// Write header to file
 		file->info(make_header(author, date));
 
-		const auto board_id = get_active_boards();
+		get_active_boards();
+		/*const auto board_id = get_active_boards();
 		const auto labels = get_labels(board_id);
 		const auto lists = get_lists(board_id);
 
@@ -495,7 +487,7 @@ private:
 		std::remove("Monthly Status Report.aux");
 		std::remove("Monthly Status Report.log");
 		std::remove("Monthly Status Report.out");
-		std::remove("Monthly Status Report.aux");
+		std::remove("Monthly Status Report.aux");*/
 	}
 
 public:
