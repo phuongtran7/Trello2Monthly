@@ -113,11 +113,6 @@ private:
 				}
 			}
 
-			for (const auto& temp : list_of_open_boards)
-			{
-				console->info("Name: {}, ID: {}", temp.name, temp.id);
-			}
-
 			return list_of_open_boards;
 		})
 
@@ -126,7 +121,7 @@ private:
 			//for (const auto& boards : input)
 			for (size_t i = 0; i < input.size(); ++i)
 			{
-				console->info("[{}] board: {} is active.", i, input.at(i).name, input.at(i).id);
+				console->info("[{}] board: \"{}\" is active.", i, input.at(i).name, input.at(i).id);
 			}
 
 			console->info("Please enter board number you wish to convert to TEX:");
@@ -151,7 +146,7 @@ private:
 		return request_task.get();
 	}
 
-	std::vector<list_info> get_lists(const string_t& board_id)
+	std::vector<list_info> get_lists(const std::string& board_id)
 	{
 		// Create http_client to send the request.
 		http_client client(U("https://api.trello.com"));
@@ -159,7 +154,7 @@ private:
 		// Build request URI and start the request.
 		uri_builder builder;
 		builder.set_path(U("/1/boards/"));
-		builder.append_path(board_id);
+		builder.append_path(conversions::to_string_t(board_id));
 		builder.append_path(U("/lists"));
 		builder.append_path(trello_secrect_);
 
@@ -171,28 +166,21 @@ private:
 			console->info("Received response status code from List querry: {}.", response.status_code());
 
 			// Extract JSON out of the response
-			return response.extract_json();
+			return response.extract_utf8string();
 		})
 			// parse JSON
-			.then([=](json::value json_data)
+			.then([=](std::string json_data)
 		{
 			std::vector<list_info> list_id;
-			auto data_array = json_data.as_array();
-			for (const auto& list : data_array)
-			{
+
+			rapidjson::Document document;
+			document.Parse(json_data.c_str());
+
+			// Loop through all the list and get the data
+			for (const auto& object : document.GetArray()) {
 				list_info temp_list;
-				const auto& data_obj = list.as_object();
-				for (const auto& iter_inner : data_obj)
-				{
-					if (iter_inner.first == U("id"))
-					{
-						temp_list.id = iter_inner.second.as_string();
-					}
-					if (iter_inner.first == U("name"))
-					{
-						temp_list.name = iter_inner.second.as_string();
-					}
-				}
+				temp_list.name = object.FindMember("name")->value.GetString();
+				temp_list.id = object.FindMember("id")->value.GetString();
 				list_id.emplace_back(temp_list);
 			}
 			return list_id;
@@ -212,7 +200,7 @@ private:
 	}
 
 	// Get all the cards and its label, within a specific list
-	std::vector<card_info> get_card(const string_t& list_id)
+	std::vector<card_info> get_card(const std::string& list_id)
 	{
 		// Create http_client to send the request.
 		http_client client(U("https://api.trello.com"));
@@ -220,7 +208,7 @@ private:
 		// Build request URI and start the request.
 		uri_builder builder;
 		builder.set_path(U("/1/lists/"));
-		builder.append_path(list_id);
+		builder.append_path(conversions::to_string_t(list_id));
 		builder.append_path(U("/cards"));
 		builder.append_path(trello_secrect_);
 
@@ -232,46 +220,27 @@ private:
 			console->info("Received response status code from Card querry: {}.", response.status_code());
 
 			// Extract JSON out of the response
-			return response.extract_json();
+			return response.extract_utf8string();
 		})
 			// parse JSON
-			.then([=](json::value json_data)
+			.then([=](std::string json_data)
 		{
 			std::vector<card_info> cards;
-			auto data_array = json_data.as_array();
-			// Loop through all the cards in the list and return a vector of card name and label
-			for (const auto& card : data_array)
-			{
-				card_info temp;
-				const auto& data_obj = card.as_object();
-				for (const auto& iter_inner : data_obj)
-				{
-					if (iter_inner.first == U("name"))
-					{
-						auto temp_string = iter_inner.second.serialize();
-						// Trim the double quotes at start and end of the string
-						temp.name = temp_string.substr(1, temp_string.size() - 2);
-					}
 
-					if (iter_inner.first == U("labels"))
-					{
-						// Loop through all the labels the card has
-						const auto& card_labels = iter_inner.second.as_array();
-						for (auto label : card_labels)
-						{
-							const auto& data = label.as_object();
-							// Loop through all the fields each of label has
-							for (const auto& iterator : data)
-							{
-								if (iterator.first == U("name"))
-								{
-									temp.label = iterator.second.as_string();
-								}
-							}
-						}
-					}
+			rapidjson::Document document;
+			document.Parse(json_data.c_str());
+
+			// Loop through all the cards
+			for (const auto& object : document.GetArray()) {
+				card_info temp_card;
+				temp_card.name = object.FindMember("name")->value.GetString();
+				// Get the array of the labels in this particular card
+				auto temp_label = object["labels"].GetArray();
+				for (rapidjson::SizeType i = 0; i < temp_label.Size(); i++) {
+					temp_card.label = (temp_label[i]["name"].GetString());
 				}
-				cards.emplace_back(temp);
+
+				cards.emplace_back(temp_card);
 			}
 			return cards;
 		});
@@ -290,7 +259,7 @@ private:
 	}
 
 	// The number of subsection in the latex will depends on the number of labels
-	std::vector<string_t> get_labels(const string_t& board_id)
+	std::vector<std::string> get_labels(const std::string& board_id)
 	{
 		// Create http_client to send the request.
 		http_client client(U("https://api.trello.com"));
@@ -298,11 +267,11 @@ private:
 		// Build request URI and start the request.
 		uri_builder builder;
 		builder.set_path(U("/1/boards/"));
-		builder.append_path(board_id);
+		builder.append_path(conversions::to_string_t(board_id));
 		builder.append_path(U("/labels/"));
 		builder.append_path(trello_secrect_);
 
-		pplx::task<std::vector<string_t>> request_task = client.request(methods::GET, builder.to_string())
+		pplx::task<std::vector<std::string>> request_task = client.request(methods::GET, builder.to_string())
 
 			// Handle response headers arriving.
 			.then([=](http_response response)
@@ -310,23 +279,20 @@ private:
 			console->info("Received response status code from Label querry: {}", response.status_code());
 
 			// Extract JSON out of the response
-			return response.extract_json();
+			return response.extract_utf8string();
 		})
 			// parse JSON
-			.then([=](json::value json_data)
+			.then([=](std::string json_data)
 		{
-			std::vector<string_t> labels;
-			auto data_array = json_data.as_array();
-			for (const auto& label : data_array)
-			{
-				const auto& data_obj = label.as_object();
-				for (const auto& iter_inner : data_obj)
-				{
-					if (iter_inner.first == U("name"))
-					{
-						labels.emplace_back(iter_inner.second.as_string());
-					}
-				}
+			std::vector<std::string> labels;
+
+			rapidjson::Document document;
+			document.Parse(json_data.c_str());
+
+			// Loop through all the label objects
+			for (const auto& object : document.GetArray()) {
+				// Get the name of the label
+				labels.emplace_back(object.FindMember("name")->value.GetString());
 			}
 			return labels;
 		});
@@ -348,7 +314,7 @@ private:
 	// As latex is really picky about empty bullet point elements so this is done to make sure
 	// that there is at least a card that was tagged with the label in order to make a "\subsubsection"
 	// Also, due to the fact that labels are defined per board not per list so we cannot get label for specific list
-	std::unordered_set<std::string> get_using_label(std::vector<card_info> cards)
+	std::unordered_set<std::string> get_using_label(std::vector<card_info> cards) const
 	{
 		std::unordered_set<std::string> unique_labels;
 		for (const auto& card : cards)
@@ -417,8 +383,7 @@ private:
 		// Write header to file
 		file->info(make_header(author, date));
 
-		get_active_boards();
-		/*const auto board_id = get_active_boards();
+		const auto board_id = get_active_boards();
 		const auto labels = get_labels(board_id);
 		const auto lists = get_lists(board_id);
 
@@ -487,7 +452,7 @@ private:
 		std::remove("Monthly Status Report.aux");
 		std::remove("Monthly Status Report.log");
 		std::remove("Monthly Status Report.out");
-		std::remove("Monthly Status Report.aux");*/
+		std::remove("Monthly Status Report.aux");
 	}
 
 public:
