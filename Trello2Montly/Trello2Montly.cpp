@@ -234,12 +234,8 @@ private:
 			for (const auto& object : document.GetArray()) {
 				card_info temp_card;
 				temp_card.name = object.FindMember("name")->value.GetString();
-				// Get the array of the labels in this particular card
-				auto temp_label = object["labels"].GetArray();
-				for (rapidjson::SizeType i = 0; i < temp_label.Size(); i++) {
-					temp_card.label = (temp_label[i]["name"].GetString());
-				}
-
+				// Get the first label's name
+				temp_card.label = object["labels"].GetArray().Begin()->FindMember("name")->value.GetString();
 				cards.emplace_back(temp_card);
 			}
 			return cards;
@@ -456,10 +452,11 @@ private:
 	}
 
 public:
-	monthly()
+	monthly() = default;
+
+	void run()
 	{
 		start_logger();
-
 		std::string author;
 		std::string date;
 
@@ -472,7 +469,7 @@ public:
 		std::getline(std::cin, date);
 
 		process_data(author, date);
-	};
+	}
 	std::shared_ptr<spdlog::logger> console = nullptr;
 	std::shared_ptr<spdlog::logger> file = nullptr;
 };
@@ -480,6 +477,7 @@ public:
 int main(int argc, char* argv[])
 {
 	monthly new_month;
+	new_month.run();
 	std::getchar();
 	return 0;
 }
