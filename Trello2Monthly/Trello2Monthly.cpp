@@ -402,32 +402,28 @@ class monthly
 			auto available_lable = get_using_label(cards);
 
 			file->info("\\subsection{General Development}");
-			// Loop through all the labels
-			for (const auto& label : labels)
+
+			// Loop through all the labels that the cards in this list uses instead of all the labels in the board
+			for (const auto& label : available_lable)
 			{
-				// Check whether the label is used in any of the card in this list and it's not the "Hour Breakdown" label as that label will be used later
-				if (available_lable.find(label) != available_lable.end() && label != "Hour Breakdown")
+				// Check whether the label is "Hour Breakdown" as this particular label will be used later instead of here.
+				if (label != "Hour Breakdown")
 				{
 					auto label_string = fmt::format("\\subsubsection{{{}}}", label);
 					file->info(label_string);
 
 					file->info("\\begin{itemize}");
-
 					// Loop through each card
 					for (const auto& card : cards)
 					{
-						// Loop through each label in card
-						for (const auto& card_label : card.labels)
+						// If the card has the current label then write it down here.
+						// A card can have multiple label and it will appear at multiple section.
+						if (card.labels.find(label) != card.labels.end())
 						{
-							// If the card is tag with the same label then put it here.
-							if (card_label == label)
-							{
-								auto temp_string = fmt::format("	\\item {}", card.name);
-								file->info(temp_string);
-							}
+							auto temp_string = fmt::format("	\\item {}", card.name);
+							file->info(temp_string);
 						}
 					}
-
 					file->info("\\end{itemize}");
 				}
 			}
@@ -438,14 +434,9 @@ class monthly
 			// Loop through each card
 			for (const auto& card : cards)
 			{
-				// Loop through each label in card
-				for (const auto& card_label : card.labels)
+				if (card.labels.find("Hour Breakdown") != card.labels.end())
 				{
-					// If the card is tagged with the same label then put it here.
-					if (card_label == "Hour Breakdown")
-					{
-						file->info(card.name);
-					}
+					file->info(card.name);
 				}
 			}
 		}
