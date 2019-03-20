@@ -11,7 +11,6 @@ using namespace concurrency::streams;       // Asynchronous streams
 
 class monthly
 {
-private:
 	struct boards_info
 	{
 		std::string name;
@@ -27,8 +26,9 @@ private:
 	struct card_info
 	{
 		std::string name;
-		std::string label;
+		std::unordered_set<std::string> labels;
 	};
+
 	string_t trello_secrect_;
 
 	static std::string make_header(const std::string& author_string, const std::string& date_string)
@@ -234,8 +234,11 @@ private:
 			for (const auto& object : document.GetArray()) {
 				card_info temp_card;
 				temp_card.name = object.FindMember("name")->value.GetString();
-				// Get the first label's name
-				temp_card.label = object["labels"].GetArray().Begin()->FindMember("name")->value.GetString();
+				// Get all the labels that attached to the card
+				for (auto& temp_label_object : object["labels"].GetArray())
+				{
+					temp_card.labels.insert(temp_label_object.FindMember("name")->value.GetString());
+				}
 				cards.emplace_back(temp_card);
 			}
 			return cards;
@@ -310,12 +313,15 @@ private:
 	// As latex is really picky about empty bullet point elements so this is done to make sure
 	// that there is at least a card that was tagged with the label in order to make a "\subsubsection"
 	// Also, due to the fact that labels are defined per board not per list so we cannot get label for specific list
-	std::unordered_set<std::string> get_using_label(std::vector<card_info> cards) const
+	std::unordered_set<std::string> get_using_label(std::vector<card_info> cards)
 	{
 		std::unordered_set<std::string> unique_labels;
 		for (const auto& card : cards)
 		{
-			unique_labels.insert(card.label);
+			for (const auto& label : card.labels)
+			{
+				unique_labels.insert(label);
+			}
 		}
 		return unique_labels;
 	}
@@ -386,7 +392,7 @@ private:
 		// Start writing each list as a section
 		for (const auto& list : lists)
 		{
-			auto section_string = fmt::format("\\section{{{}}}", conversions::to_utf8string(list.name));
+			auto section_string = fmt::format("\\section{{{}}}", list.name);
 			file->info(section_string);
 
 			// Get the cards in this list with this label
@@ -400,21 +406,25 @@ private:
 			for (const auto& label : labels)
 			{
 				// Check whether the label is used in any of the card in this list and it's not the "Hour Breakdown" label as that label will be used later
-				if (available_lable.find(label) != available_lable.end() && conversions::to_utf8string(label) != "Hour Breakdown")
+				if (available_lable.find(label) != available_lable.end() && label != "Hour Breakdown")
 				{
-					auto label_string = fmt::format("\\subsubsection{{{}}}", conversions::to_utf8string(label));
+					auto label_string = fmt::format("\\subsubsection{{{}}}", label);
 					file->info(label_string);
 
 					file->info("\\begin{itemize}");
 
-					// Loop through all the card to put it into approriate label
+					// Loop through each card
 					for (const auto& card : cards)
 					{
-						// If the card is tag with the same label then put it here.
-						if (conversions::to_utf8string(card.label) == conversions::to_utf8string(label))
+						// Loop through each label in card
+						for (const auto& card_label : card.labels)
 						{
-							auto temp_string = fmt::format("	\\item {}", conversions::to_utf8string(card.name));
-							file->info(temp_string);
+							// If the card is tag with the same label then put it here.
+							if (card_label == label)
+							{
+								auto temp_string = fmt::format("	\\item {}", card.name);
+								file->info(temp_string);
+							}
 						}
 					}
 
@@ -425,12 +435,17 @@ private:
 			// Write hour breakdown section
 			file->info("\\subsection{Hour Breakdown}");
 
+			// Loop through each card
 			for (const auto& card : cards)
 			{
-				// If the card is tag with the same label then put it here.
-				if (conversions::to_utf8string(card.label) == "Hour Breakdown")
+				// Loop through each label in card
+				for (const auto& card_label : card.labels)
 				{
-					file->info(conversions::to_utf8string(card.name));
+					// If the card is tagged with the same label then put it here.
+					if (card_label == "Hour Breakdown")
+					{
+						file->info(card.name);
+					}
 				}
 			}
 		}
