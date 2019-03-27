@@ -26,7 +26,7 @@ class monthly
 	struct card_info
 	{
 		std::string name;
-		std::unordered_set<std::string> labels;
+		std::set<std::string> labels;
 	};
 
 	string_t trello_secrect_;
@@ -313,9 +313,9 @@ class monthly
 	// As latex is really picky about empty bullet point elements so this is done to make sure
 	// that there is at least a card that was tagged with the label in order to make a "\subsubsection"
 	// Also, due to the fact that labels are defined per board not per list so we cannot get label for specific list
-	std::unordered_set<std::string> get_using_label(std::vector<card_info> cards)
+	std::set<std::string> get_using_label(std::vector<card_info> cards)
 	{
-		std::unordered_set<std::string> unique_labels;
+		std::set<std::string> unique_labels;
 		for (const auto& card : cards)
 		{
 			for (const auto& label : card.labels)
@@ -323,6 +323,7 @@ class monthly
 				unique_labels.insert(label);
 			}
 		}
+
 		return unique_labels;
 	}
 
