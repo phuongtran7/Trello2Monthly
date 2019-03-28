@@ -460,25 +460,6 @@ class monthly
 			{
 				std::unordered_map<std::string, float> work_hour;
 
-				// Initalize the map with all label and zero work hour
-				for (const auto& temp_label : available_lable)
-				{
-					work_hour[temp_label] = 0.0;
-				}
-
-				// Loop through all the card and count to work hour for each label
-				for (const auto& card : cards)
-				{
-					// Loop through all labels that each card has
-					for (const auto& label_in_card : card.labels)
-					{
-						if (work_hour.find(label_in_card) != work_hour.end())
-						{
-							work_hour[label_in_card] += card.hour;
-						}
-					}
-				}
-
 				for (const auto& label : available_lable)
 				{
 					auto label_string = fmt::format("\\subsubsection{{{}}}", label);
@@ -494,6 +475,9 @@ class monthly
 						{
 							auto temp_string = fmt::format("	\\item {}", card.name);
 							file->info(temp_string);
+
+							// Save the label of the card and each work hour here for later access
+							work_hour[label] += card.hour;
 						}
 					}
 					file->info("\\end{itemize}");
