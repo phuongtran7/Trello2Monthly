@@ -1,6 +1,8 @@
 #ifndef PCH_H
 #define PCH_H
 
+#define  _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING
+
 // TODO: add headers that you want to pre-compile here
 #include <iostream>
 
@@ -12,5 +14,6 @@
 #include <set>
 #include <fstream>
 #include "rapidjson/document.h"
+#include <optional>
 
 #endif //PCH_H

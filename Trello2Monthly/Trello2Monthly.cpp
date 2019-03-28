@@ -27,6 +27,7 @@ class monthly
 	{
 		std::string name;
 		std::set<std::string> labels;
+		float hour{};
 	};
 
 	string_t trello_secrect_;
@@ -195,6 +196,7 @@ class monthly
 		catch (const std::exception &e)
 		{
 			console->critical("Error exception: {}", e.what());
+			return {};
 		}
 		return request_task.get();
 	}
@@ -210,7 +212,8 @@ class monthly
 		builder.set_path(U("/1/lists/"));
 		builder.append_path(conversions::to_string_t(list_id));
 		builder.append_path(U("/cards"));
-		builder.append_path(trello_secrect_);
+		const auto custom_field_path = trello_secrect_ + U("&customFieldItems=true"); // For some reason append_path here return 401
+		builder.append_path(custom_field_path);
 
 		pplx::task<std::vector<card_info>> request_task = client.request(methods::GET, builder.to_string())
 
@@ -238,6 +241,15 @@ class monthly
 				for (auto& temp_label_object : object["labels"].GetArray())
 				{
 					temp_card.labels.insert(temp_label_object.FindMember("name")->value.GetString());
+				}
+				// If there is a customField array
+				if (!object["customFieldItems"].Empty())
+				{
+					auto custom_field_array = object["customFieldItems"].GetArray();
+					for (auto& field : custom_field_array)
+					{
+						temp_card.hour = std::stof(field.FindMember("value")->value.FindMember("number")->value.GetString());
+					}
 				}
 				cards.emplace_back(temp_card);
 			}
@@ -323,7 +335,6 @@ class monthly
 				unique_labels.insert(label);
 			}
 		}
-
 		return unique_labels;
 	}
 
