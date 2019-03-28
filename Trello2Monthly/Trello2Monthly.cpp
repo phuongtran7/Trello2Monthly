@@ -40,16 +40,13 @@ class monthly
 		std::string header =
 			"\\documentclass[12pt]{article}\n"
 			"\\usepackage[a4paper, bottom = 1.0in, left = 1.5in, right = 1.5in]{geometry}\n"
-			"\%More info : https://tex.stackexchange.com/a/12408\n"
 			"\\usepackage[hidelinks]{hyperref}\n"
 			"\n"
-			"\%More info : https://tex.stackexchange.com/a/29594\n"
 			"\\usepackage{titling}\n"
 			"\\setlength{\\droptitle}{-10em}\n"
 			"\n"
 			"\\setlength{\\footnotesep}{\\baselineskip}\n"
 			"\n"
-			"\%More info : https://tex.stackexchange.com/a/136531\n"
 			"\\makeatletter\n"
 			"\\renewcommand{\\@seccntformat}[1]{\n"
 			"  \\ifcsname prefix@#1\\endcsname\n"
@@ -422,7 +419,7 @@ class monthly
 		trello_secrect_ = get_secrects();
 		if (trello_secrect_.empty())
 		{
-			console->critical("Cannot read API keys. Please make sure \"Tokens.txt\" exists.");
+			console->critical(R"(Cannot read API keys. Please make sure "Tokens.txt" exists.)");
 			console->info("Press any key to exit.");
 			return;
 		}
@@ -430,11 +427,6 @@ class monthly
 		file->info(make_header(author, date));
 
 		const auto board_id = get_active_boards();
-		const auto board_has_custom_field = check_has_custom_field(board_id);
-		if (board_has_custom_field)
-		{
-			console->info("Custom field detected. Will use the custom field to calculate work hours in lists that has custom field.");
-		}
 		const auto labels = get_labels(board_id);
 		const auto lists = get_lists(board_id);
 
@@ -505,7 +497,7 @@ class monthly
 					for (const auto& card : cards)
 					{
 						// If the card has the current label then write it down here.
-						// A card can have multiple label and it will appear at multiple section.
+						// A card can have multiple label and it will appear at multiple sections.
 						if (card.labels.find(label) != card.labels.end())
 						{
 							auto temp_string = fmt::format("	\\item {}", card.name);
