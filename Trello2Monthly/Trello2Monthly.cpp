@@ -32,6 +32,9 @@ class monthly
 
 	string_t trello_secrect_;
 
+	// Create http_client to send the request.
+	http_client client_;
+
 	static std::string make_header(const std::string& author_string, const std::string& date_string)
 	{
 		std::string header =
@@ -77,15 +80,13 @@ class monthly
 
 	std::string get_active_boards()
 	{
-		// Create http_client to send the request.
-		http_client client(U("https://api.trello.com"));
 
 		// Build request URI and start the request.
 		uri_builder builder;
 		builder.set_path(U("/1/members/me/boards"));
 		builder.append_path(trello_secrect_);
 
-		pplx::task<std::string> request_task = client.request(methods::GET, builder.to_string())
+		pplx::task<std::string> request_task = client_.request(methods::GET, builder.to_string())
 
 			// Handle response headers arriving.
 			.then([=](http_response response)
@@ -149,9 +150,6 @@ class monthly
 
 	std::vector<list_info> get_lists(const std::string& board_id)
 	{
-		// Create http_client to send the request.
-		http_client client(U("https://api.trello.com"));
-
 		// Build request URI and start the request.
 		uri_builder builder;
 		builder.set_path(U("/1/boards/"));
@@ -159,7 +157,7 @@ class monthly
 		builder.append_path(U("/lists"));
 		builder.append_path(trello_secrect_);
 
-		pplx::task<std::vector<list_info>> request_task = client.request(methods::GET, builder.to_string())
+		pplx::task<std::vector<list_info>> request_task = client_.request(methods::GET, builder.to_string())
 
 			// Handle response headers arriving.
 			.then([=](http_response response)
@@ -204,9 +202,6 @@ class monthly
 	// Get all the cards and its label, within a specific list
 	std::vector<card_info> get_card(const std::string& list_id)
 	{
-		// Create http_client to send the request.
-		http_client client(U("https://api.trello.com"));
-
 		// Build request URI and start the request.
 		uri_builder builder;
 		builder.set_path(U("/1/lists/"));
@@ -215,7 +210,7 @@ class monthly
 		const auto custom_field_path = trello_secrect_ + U("&customFieldItems=true"); // For some reason append_path here return 401
 		builder.append_path(custom_field_path);
 
-		pplx::task<std::vector<card_info>> request_task = client.request(methods::GET, builder.to_string())
+		pplx::task<std::vector<card_info>> request_task = client_.request(methods::GET, builder.to_string())
 
 			// Handle response headers arriving.
 			.then([=](http_response response)
@@ -272,9 +267,6 @@ class monthly
 	// The number of subsection in the latex will depends on the number of labels
 	std::vector<std::string> get_labels(const std::string& board_id)
 	{
-		// Create http_client to send the request.
-		http_client client(U("https://api.trello.com"));
-
 		// Build request URI and start the request.
 		uri_builder builder;
 		builder.set_path(U("/1/boards/"));
@@ -282,7 +274,7 @@ class monthly
 		builder.append_path(U("/labels/"));
 		builder.append_path(trello_secrect_);
 
-		pplx::task<std::vector<std::string>> request_task = client.request(methods::GET, builder.to_string())
+		pplx::task<std::vector<std::string>> request_task = client_.request(methods::GET, builder.to_string())
 
 			// Handle response headers arriving.
 			.then([=](http_response response)
@@ -470,7 +462,9 @@ class monthly
 	}
 
 public:
-	monthly() = default;
+	monthly(): client_(U("https://api.trello.com"))
+	{
+	}
 
 	void run()
 	{
