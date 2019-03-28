@@ -78,6 +78,47 @@ class monthly
 		return header;
 	}
 
+	bool check_has_custom_field(const std::string& board_id)
+	{
+		// Build request URI and start the request.
+		uri_builder builder;
+		builder.set_path(U("/1/boards"));
+		builder.append_path(conversions::to_string_t(board_id));
+		builder.append_path(U("/customFields"));
+		builder.append_path(trello_secrect_);
+
+		pplx::task<bool> request_task = client_.request(methods::GET, builder.to_string())
+
+			// Handle response headers arriving.
+			.then([=](http_response response)
+		{
+			console->info("Received response status code from custom field querry: {}.", response.status_code());
+
+			// Extract JSON out of the response
+			return response.extract_utf8string();
+		})
+			// parse JSON
+			.then([=](std::string json_data)
+		{
+			rapidjson::Document document;
+			document.Parse(json_data.c_str());
+
+			// If the reponse json empty then there is no custom field
+			return !document.GetArray().Empty();
+		});
+		// Wait for all the outstanding I/O to complete and handle any exceptions
+		try
+		{
+			// ReSharper disable once CppExpressionWithoutSideEffects
+			request_task.wait();
+		}
+		catch (const std::exception &e)
+		{
+			console->critical("Error exception: {}", e.what());
+		}
+		return request_task.get();
+	}
+
 	std::string get_active_boards()
 	{
 
@@ -390,6 +431,11 @@ class monthly
 		file->info(make_header(author, date));
 
 		const auto board_id = get_active_boards();
+		const auto board_has_custom_field = check_has_custom_field(board_id);
+		if (board_has_custom_field)
+		{
+			console->info("Custom field detected");
+		}
 		const auto labels = get_labels(board_id);
 		const auto lists = get_lists(board_id);
 
