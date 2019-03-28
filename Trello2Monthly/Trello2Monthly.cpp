@@ -121,7 +121,6 @@ class monthly
 
 	std::string get_active_boards()
 	{
-
 		// Build request URI and start the request.
 		uri_builder builder;
 		builder.set_path(U("/1/members/me/boards"));
@@ -434,7 +433,7 @@ class monthly
 		const auto board_has_custom_field = check_has_custom_field(board_id);
 		if (board_has_custom_field)
 		{
-			console->info("Custom field detected");
+			console->info("Custom field detected. Will use the custom field to calculate work hours in lists that has custom field.");
 		}
 		const auto labels = get_labels(board_id);
 		const auto lists = get_lists(board_id);
@@ -453,11 +452,34 @@ class monthly
 
 			file->info("\\subsection{General Development}");
 
-			// Loop through all the labels that the cards in this list uses instead of all the labels in the board
-			for (const auto& label : available_lable)
+			/* If there is no "Hour Breakdown" in the set of available_labels
+			 * then it means that the user is tagging each of the card with the custom field
+			 * work hour.
+			 */
+			if (available_lable.find("Hour Breakdown") == available_lable.end())
 			{
-				// Check whether the label is "Hour Breakdown" as this particular label will be used later instead of here.
-				if (label != "Hour Breakdown")
+				std::unordered_map<std::string, float> work_hour;
+
+				// Initalize the map with all label and zero work hour
+				for (const auto& temp_label : available_lable)
+				{
+					work_hour[temp_label] = 0.0;
+				}
+
+				// Loop through all the card and count to work hour for each label
+				for (const auto& card : cards)
+				{
+					// Loop through all labels that each card has
+					for (const auto& label_in_card : card.labels)
+					{
+						if (work_hour.find(label_in_card) != work_hour.end())
+						{
+							work_hour[label_in_card] += card.hour;
+						}
+					}
+				}
+
+				for (const auto& label : available_lable)
 				{
 					auto label_string = fmt::format("\\subsubsection{{{}}}", label);
 					file->info(label_string);
@@ -476,17 +498,49 @@ class monthly
 					}
 					file->info("\\end{itemize}");
 				}
-			}
-
-			// Write hour breakdown section
-			file->info("\\subsection{Hour Breakdown}");
-
-			// Loop through each card
-			for (const auto& card : cards)
-			{
-				if (card.labels.find("Hour Breakdown") != card.labels.end())
+				// Write hour breakdown section
+				file->info("\\subsection{Hour Breakdown}");
+				for (const auto& item : work_hour)
 				{
-					file->info(card.name);
+					file->info("\\noindent {}: {} hours.\n", item.first, item.second);
+				}
+			}
+			else
+			{
+				// Temporary delete the "Hour Breakdown" label first
+				available_lable.erase("Hour Breakdown");
+
+				// Loop through all the labels that the cards in this list uses instead of all the labels in the board
+				for (const auto& label : available_lable)
+				{
+					auto label_string = fmt::format("\\subsubsection{{{}}}", label);
+					file->info(label_string);
+
+					file->info("\\begin{itemize}");
+					// Loop through each card
+					for (const auto& card : cards)
+					{
+						// If the card has the current label then write it down here.
+						// A card can have multiple label and it will appear at multiple section.
+						if (card.labels.find(label) != card.labels.end())
+						{
+							auto temp_string = fmt::format("	\\item {}", card.name);
+							file->info(temp_string);
+						}
+					}
+					file->info("\\end{itemize}");
+				}
+
+				// Write hour breakdown section
+				file->info("\\subsection{Hour Breakdown}");
+
+				// Loop through each card
+				for (const auto& card : cards)
+				{
+					if (card.labels.find("Hour Breakdown") != card.labels.end())
+					{
+						file->info("\\noindent {}", card.name);
+					}
 				}
 			}
 		}
@@ -508,7 +562,7 @@ class monthly
 	}
 
 public:
-	monthly(): client_(U("https://api.trello.com"))
+	monthly() : client_(U("https://api.trello.com"))
 	{
 	}
 
