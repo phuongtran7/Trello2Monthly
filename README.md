@@ -26,7 +26,7 @@ And finally, due to the nature of this work, there are many projects can run par
 4. Prepare a `config.toml` file with content:
 ```
 [Configuration]
-key = "DEVELOPER-KEY"
+key = "DEVELOPER KEY"
 token = "TOKEN"
 author = "AUTHOR NAME"
 ```

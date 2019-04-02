@@ -561,6 +561,5 @@ int main(int argc, char* argv[])
 {
 	monthly new_month;
 	new_month.run();
-	std::getchar();
 	return 0;
 }
