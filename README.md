@@ -1,7 +1,7 @@
 # Trello2Monthly
 <h4 align="center">A command line program to build Monthly Status Report.</h4>
 
-Trello2Monthly is a command line program to generate PDF and Word files from Trello. Trello2Monthly uses <a href="https://github.com/Microsoft/cpprestsdk">cpprestsdk</a> and <a href="https://github.com/gabime/spdlog">spdlog</a>.
+Trello2Monthly is a command line program to generate PDF and Word files from Trello. Trello2Monthly uses <a href="https://github.com/Microsoft/cpprestsdk">cpprestsdk</a> and <a href="https://github.com/gabime/spdlog">spdlog</a> and <a href="https://github.com/skystrife/cpptoml">cpptoml</a>.
 
 ## Installation
 ### Windows
