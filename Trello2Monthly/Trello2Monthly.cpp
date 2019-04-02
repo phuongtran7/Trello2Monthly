@@ -30,7 +30,7 @@ class monthly
 		float hour{};
 	};
 
-	string_t trello_secrect_;
+	std::optional<string_t> trello_secrect_;
 
 	// Create http_client to send the request.
 	http_client client_;
@@ -60,17 +60,16 @@ class monthly
 			"\n"
 			"\\title{Monthly Status Report}\n";
 
-		header += "\\author{";
-		header += author_string;
-		header += "}\n";
-		header += "\\date";
-		header += "{";
-		header += date_string;
-		header += "}\n";
-		header += "\n";
-		header += "\\begin{document}\n";
-		header += "\\newpage\n";
-		header += "\\maketitle\n";
+		header.append(fmt::format("\\author{{{}}}\n", author_string));
+		header.append(fmt::format("\\date{{{}}}\n", date_string));
+
+		const std::string tail =
+			"\n"
+			"\\begin{document}"
+			"\\newpage"
+			"\\maketitle";
+
+		header.append(tail);
 
 		return header;
 	}
@@ -82,7 +81,7 @@ class monthly
 		builder.set_path(U("/1/boards"));
 		builder.append_path(conversions::to_string_t(board_id));
 		builder.append_path(U("/customFields"));
-		builder.append_path(trello_secrect_);
+		builder.append_path(trello_secrect_.value());
 
 		pplx::task<bool> request_task = client_.request(methods::GET, builder.to_string())
 
@@ -121,7 +120,7 @@ class monthly
 		// Build request URI and start the request.
 		uri_builder builder;
 		builder.set_path(U("/1/members/me/boards"));
-		builder.append_path(trello_secrect_);
+		builder.append_path(trello_secrect_.value());
 
 		pplx::task<std::string> request_task = client_.request(methods::GET, builder.to_string())
 
@@ -192,7 +191,7 @@ class monthly
 		builder.set_path(U("/1/boards/"));
 		builder.append_path(conversions::to_string_t(board_id));
 		builder.append_path(U("/lists"));
-		builder.append_path(trello_secrect_);
+		builder.append_path(trello_secrect_.value());
 
 		pplx::task<std::vector<list_info>> request_task = client_.request(methods::GET, builder.to_string())
 
@@ -244,7 +243,7 @@ class monthly
 		builder.set_path(U("/1/lists/"));
 		builder.append_path(conversions::to_string_t(list_id));
 		builder.append_path(U("/cards"));
-		const auto custom_field_path = trello_secrect_ + U("&customFieldItems=true"); // For some reason append_path here return 401
+		const auto custom_field_path = trello_secrect_.value() + U("&customFieldItems=true"); // For some reason append_path here return 401
 		builder.append_path(custom_field_path);
 
 		pplx::task<std::vector<card_info>> request_task = client_.request(methods::GET, builder.to_string())
@@ -309,7 +308,7 @@ class monthly
 		builder.set_path(U("/1/boards/"));
 		builder.append_path(conversions::to_string_t(board_id));
 		builder.append_path(U("/labels/"));
-		builder.append_path(trello_secrect_);
+		builder.append_path(trello_secrect_.value());
 
 		pplx::task<std::vector<std::string>> request_task = client_.request(methods::GET, builder.to_string())
 
@@ -394,7 +393,7 @@ class monthly
 		return true;
 	}
 
-	string_t get_secrects() const
+	std::optional<string_t> get_secrects() const
 	{
 		std::ifstream input("Tokens.txt");
 		std::vector<std::string> file_lines;
@@ -411,13 +410,13 @@ class monthly
 			auto trello_secrect = key + token;
 			return trello_secrect;
 		}
-		return U("");
+		return std::nullopt;
 	}
 
 	void process_data(const std::string& author, const std::string& date)
 	{
 		trello_secrect_ = get_secrects();
-		if (trello_secrect_.empty())
+		if (!trello_secrect_.has_value())
 		{
 			console->critical(R"(Cannot read API keys. Please make sure "Tokens.txt" exists.)");
 			console->info("Press any key to exit.");
@@ -442,7 +441,7 @@ class monthly
 			// Get only the labels that the cards in this list use
 			auto available_lable = get_using_label(cards);
 
-			file->info("\\subsection{General Development}");
+			file->info("\\subsection{Completed Tasks}");
 
 			/* If there is no "Hour Breakdown" in the set of available_labels
 			 * then it means that the user is tagging each of the card with the custom field
@@ -476,10 +475,12 @@ class monthly
 				}
 				// Write hour breakdown section
 				file->info("\\subsection{Hour Breakdown}");
+				file->info("\\begin{itemize}");
 				for (const auto& item : work_hour)
 				{
-					file->info("\\noindent {}: {} hours.\n", item.first, item.second);
+					file->info("		\\item {}: {} hours.\n", item.first, item.second);
 				}
+				file->info("\\end{itemize}");
 			}
 			else
 			{
