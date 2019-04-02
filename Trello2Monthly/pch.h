@@ -15,5 +15,4 @@
 #include <fstream>
 #include "rapidjson/document.h"
 #include <optional>
-
 #endif //PCH_H
