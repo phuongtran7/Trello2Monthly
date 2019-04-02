@@ -15,4 +15,5 @@
 #include <fstream>
 #include "rapidjson/document.h"
 #include <optional>
+#include "cpptoml.h"
 #endif //PCH_H

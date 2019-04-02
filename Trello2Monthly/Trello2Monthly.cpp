@@ -31,11 +31,13 @@ class monthly
 	};
 
 	std::optional<string_t> trello_secrect_;
+	std::string author_;
+	std::string date_;
 
 	// Create http_client to send the request.
 	http_client client_;
 
-	static std::string make_header(const std::string& author_string, const std::string& date_string)
+	std::string make_header() const
 	{
 		std::string header =
 			"\\documentclass[12pt]{article}\n"
@@ -60,8 +62,8 @@ class monthly
 			"\n"
 			"\\title{Monthly Status Report}\n";
 
-		header.append(fmt::format("\\author{{{}}}\n", author_string));
-		header.append(fmt::format("\\date{{{}}}\n", date_string));
+		header.append(fmt::format("\\author{{{}}}\n", author_));
+		header.append(fmt::format("\\date{{{}}}\n", date_));
 
 		const std::string tail =
 			"\n"
@@ -156,7 +158,6 @@ class monthly
 
 			.then([=](std::vector<boards_info> input)
 		{
-			//for (const auto& boards : input)
 			for (size_t i = 0; i < input.size(); ++i)
 			{
 				console->info("[{}] board: \"{}\" is active.", i, input.at(i).name, input.at(i).id);
@@ -166,6 +167,9 @@ class monthly
 
 			int choice;
 			std::cin >> choice;
+
+			// Set the board name as the date/month for the report
+			date_ = input.at(choice).name;
 
 			// Return the chosen board ID
 			return input.at(choice).id;
@@ -393,41 +397,42 @@ class monthly
 		return true;
 	}
 
-	std::optional<string_t> get_secrects() const
+	std::optional<string_t> parse_config()
 	{
-		std::ifstream input("Tokens.txt");
-		std::vector<std::string> file_lines;
-		if (input.good())
-		{
-			std::string line;
-			while (std::getline(input, line))
-			{
-				file_lines.emplace_back(line);
-			}
-			const auto key = conversions::to_string_t("?key=" + file_lines.at(0));
-			const auto token = conversions::to_string_t("&token=" + file_lines.at(1));
+		const auto config = cpptoml::parse_file("config.toml");
 
-			auto trello_secrect = key + token;
-			return trello_secrect;
+		const auto key_string = config->get_qualified_as<std::string>("Configuration.key").value_or("");
+		const auto token_string = config->get_qualified_as<std::string>("Configuration.token").value_or("");
+		const auto author_string = config->get_qualified_as<std::string>("Configuration.author").value_or("");
+
+		if (key_string.empty() || token_string.empty() || author_string.empty())
+		{
+			return std::nullopt;
 		}
-		return std::nullopt;
+		author_ = author_string;
+		const auto key = conversions::to_string_t("?key=" + key_string);
+		const auto token = conversions::to_string_t("&token=" + token_string);
+
+		auto secrect = key + token;
+		return secrect;
 	}
 
-	void process_data(const std::string& author, const std::string& date)
+	void process_data()
 	{
-		trello_secrect_ = get_secrects();
+		trello_secrect_ = parse_config();
 		if (!trello_secrect_.has_value())
 		{
 			console->critical(R"(Cannot read API keys. Please make sure "Tokens.txt" exists.)");
 			console->info("Press any key to exit.");
 			return;
 		}
-		// Write header to file
-		file->info(make_header(author, date));
 
 		const auto board_id = get_active_boards();
 		const auto labels = get_labels(board_id);
 		const auto lists = get_lists(board_id);
+
+		// Write header to file
+		file->info(make_header());
 
 		// Start writing each list as a section
 		for (const auto& list : lists)
@@ -546,18 +551,7 @@ public:
 	void run()
 	{
 		start_logger();
-		std::string author;
-		std::string date;
-
-		// The Resistance's leader.
-		std::cout << "Please enter author's name. For example: John Connor.\n";
-		std::getline(std::cin, author);
-
-		// Skynet becomes self-aware.
-		std::cout << "Please enter the month and year for the report. For example: August 1997.\n";
-		std::getline(std::cin, date);
-
-		process_data(author, date);
+		process_data();
 	}
 	std::shared_ptr<spdlog::logger> console = nullptr;
 	std::shared_ptr<spdlog::logger> file = nullptr;

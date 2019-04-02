@@ -11,6 +11,9 @@
 Tokens.txt
 Secrects.h
 
+# Config file
+*.toml
+
 # JSON
 *.json
 
