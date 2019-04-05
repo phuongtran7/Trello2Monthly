@@ -23,7 +23,7 @@ A `Board` can contain many `Lists`, each of these `Lists` represents a week in t
 
 In the `List`, there can be as many `Cards` as required. Each of these `Cards` represents the task that is completed in that week.
 
-Due to the nature of this work, there are many projects can run parallel with each other, therefore the `Labels` are used to marked which task belongs to which projects. A task can have multiple `Labels` and it will appear at multiple sections in the final PDF file.
+Due to the nature of this work, there are many projects can run parallel with each other, therefore the `Labels` are used to mark which task belongs to which projects. A task can have multiple `Labels` and it will appear at multiple sections in the final PDF file.
 
 There are two ways to report the work hours for each week. The first one is to use `Label`. Create a new `Label` called `Hour Breakdown` and then tag the cards that contain the work hour. For example: a `Card` named `Boeing 737: 10 Hours` with the tag `Hour Breakdown` will be put into the Hour Breakdown section of the PDF file. There can be as many `Cards` that tagged with `Hour Breakdown` as needed. Each of the `Cards` can represent a different project for that week.
 
