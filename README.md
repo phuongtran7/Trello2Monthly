@@ -10,9 +10,13 @@ Trello2Monthly is a command line program to generate PDF and Word files from Tre
 
 ## Preparing Trello
 Trello2Monthly expects a certain way of using Trello to successfully generate a Monthly Status. There are four important components in Trello: `Board`, `List`, `Card` and `Label`.
+
 Trello2Monthly expects a `Board` to represent the Month for the status report. Everything should be included in a Board for that month. The `Board` name should contain the month and year for the report. For example `Monthly Status Report - August 1997`. 
+
 A `Board` can contain many `Lists`, each of these `Lists` represents a week in the month. The name of the `List` should be something like `8/24/1997 -- 8/30/1997` for easy integration with the LaTEX template.
+
 In the `List`, there can be as many `Cards` as required. Each of these `Cards` represents the task that is completed in that week.
+
 And finally, due to the nature of this work, there are many projects can run parallel with each other, therefore the `Labels` are used to marked which task belongs to which projects. A task can have multiple `Labels` and it will appear at multiple sections in the final PDF file.
 
 ## Usage
