@@ -413,22 +413,28 @@ class monthly
 
 	std::optional<string_t> parse_config()
 	{
-		const auto config = cpptoml::parse_file("config.toml");
+		try
+		{
+			const auto config = cpptoml::parse_file("config.toml");
+			const auto key_string = config->get_qualified_as<std::string>("Configuration.key").value_or("");
+			const auto token_string = config->get_qualified_as<std::string>("Configuration.token").value_or("");
+			const auto author_string = config->get_qualified_as<std::string>("Configuration.author").value_or("");
 
-		const auto key_string = config->get_qualified_as<std::string>("Configuration.key").value_or("");
-		const auto token_string = config->get_qualified_as<std::string>("Configuration.token").value_or("");
-		const auto author_string = config->get_qualified_as<std::string>("Configuration.author").value_or("");
+			if (key_string.empty() || token_string.empty() || author_string.empty())
+			{
+				return std::nullopt;
+			}
+			author_ = author_string;
+			const auto key = conversions::to_string_t("?key=" + key_string);
+			const auto token = conversions::to_string_t("&token=" + token_string);
 
-		if (key_string.empty() || token_string.empty() || author_string.empty())
+			auto secrect = key + token;
+			return secrect;
+		}
+		catch (cpptoml::parse_exception&)
 		{
 			return std::nullopt;
 		}
-		author_ = author_string;
-		const auto key = conversions::to_string_t("?key=" + key_string);
-		const auto token = conversions::to_string_t("&token=" + token_string);
-
-		auto secrect = key + token;
-		return secrect;
 	}
 
 	void process_data()
@@ -436,7 +442,7 @@ class monthly
 		trello_secrect_ = parse_config();
 		if (!trello_secrect_.has_value())
 		{
-			console->critical(R"(Cannot read API keys. Please make sure "Tokens.txt" exists.)");
+			console->critical(R"(Cannot read API keys. Please make sure "config.toml" exists.)");
 			console->info("Press any key to exit.");
 			return;
 		}
@@ -575,5 +581,8 @@ int main(int argc, char* argv[])
 {
 	monthly new_month;
 	new_month.run();
+
+	std::getchar();
+
 	return 0;
 }
