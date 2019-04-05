@@ -185,9 +185,6 @@ class monthly
 			// Set the board name as the date/month for the report
 			date_ = get_date(input.at(choice).name);
 
-			//Test regex
-			get_date(input.at(choice).name);
-
 			// Return the chosen board ID
 			return input.at(choice).id;
 		});
