@@ -33,8 +33,9 @@ The user can mix the two ways of reporting hour in a same `Board`, however, the 
 
 ## Usage
 1. Install <a href="https://miktex.org/">MiKTeX</a> and update it.
-2. Get API key and Token from <a href="https://developers.trello.com/docs/api-introduction">Trello</a>.
-3. Prepare a `config.toml` file with content:
+2. (Optional) Install <a href="https://pandoc.org/installing.html">Pandoc</a> if need Word file. 
+3. Get API key and Token from <a href="https://developers.trello.com/docs/api-introduction">Trello</a>.
+4. Prepare a `config.toml` file with content:
 ```
 [Configuration]
 key = "DEVELOPER KEY"
