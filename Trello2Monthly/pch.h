@@ -16,4 +16,5 @@
 #include "rapidjson/document.h"
 #include <optional>
 #include "cpptoml.h"
+#include <regex>
 #endif //PCH_H

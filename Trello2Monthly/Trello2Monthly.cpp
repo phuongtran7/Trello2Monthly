@@ -32,10 +32,24 @@ class monthly
 
 	std::optional<string_t> trello_secrect_;
 	std::string author_;
-	std::string date_;
+	std::optional<std::string> date_;
 
 	// Create http_client to send the request.
 	http_client client_;
+
+	std::optional<std::string> get_date(const std::string& board_name) const
+	{
+		const std::regex expression(R"(\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ach)|Apr(?:il)|May|Jun(?:e)|Jul(?:y)|Aug(?:ust)|Sep(?:tember)|Oct(?:ober)|Nov(?:ember)|Dec(?:ember)?) (?:19[7-9]\d|2\d{3})(?=\D|$))");
+
+		std::smatch match;
+
+		if (std::regex_search(board_name, match, expression))
+		{
+			// There should only one month-year pair in the board name
+			return match[0];
+		}
+		return std::nullopt;
+	}
 
 	std::string make_header() const
 	{
@@ -63,7 +77,7 @@ class monthly
 			"\\title{Monthly Status Report}\n";
 
 		header.append(fmt::format("\\author{{{}}}\n", author_));
-		header.append(fmt::format("\\date{{{}}}\n", date_));
+		header.append(fmt::format("\\date{{{}}}\n", date_.value_or("")));
 
 		const std::string tail =
 			"\n"
@@ -169,7 +183,10 @@ class monthly
 			std::cin >> choice;
 
 			// Set the board name as the date/month for the report
-			date_ = input.at(choice).name;
+			date_ = get_date(input.at(choice).name);
+
+			//Test regex
+			get_date(input.at(choice).name);
 
 			// Return the chosen board ID
 			return input.at(choice).id;
