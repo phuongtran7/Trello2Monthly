@@ -38,6 +38,8 @@ class monthly
 	// Create http_client to send the request.
 	http_client client_;
 
+	// Due to the way new paragraph is represented in the Card's description, there will be two newline
+	// in the Card's description.
 	std::vector<std::string> split_description(const std::string& input) const
 	{
 		const std::regex expression(R"(\n\n)");
