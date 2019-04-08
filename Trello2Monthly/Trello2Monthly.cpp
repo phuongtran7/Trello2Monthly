@@ -28,6 +28,7 @@ class monthly
 		std::string name;
 		std::set<std::string> labels;
 		float hour{};
+		std::string description;
 	};
 
 	std::optional<string_t> trello_secrect_;
@@ -36,6 +37,23 @@ class monthly
 
 	// Create http_client to send the request.
 	http_client client_;
+
+	std::vector<std::string> split_description(const std::string& input) const
+	{
+		const std::regex expression(R"(\n\n)");
+
+		std::vector<std::string> elems;
+
+		std::sregex_token_iterator iter(input.begin(), input.end(), expression, -1);
+		std::sregex_token_iterator end;
+
+		for (std::sregex_token_iterator iterator(input.begin(), input.end(), expression, -1); iterator != std::sregex_token_iterator(); ++iterator)
+		{
+			elems.push_back(*iterator);
+		}
+
+		return elems;
+	}
 
 	std::optional<std::string> get_date(const std::string& board_name) const
 	{
@@ -286,6 +304,7 @@ class monthly
 			for (const auto& object : document.GetArray()) {
 				card_info temp_card;
 				temp_card.name = object.FindMember("name")->value.GetString();
+				temp_card.description = object.FindMember("desc")->value.GetString();
 				// Get all the labels that attached to the card
 				for (auto& temp_label_object : object["labels"].GetArray())
 				{
@@ -491,6 +510,18 @@ class monthly
 						{
 							auto temp_string = fmt::format("	\\item {}", card.name);
 							file->info(temp_string);
+
+							// If the card has description then write it into the subitem. Thanks Al for this suggestion
+							if (!card.description.empty())
+							{
+								auto split_input = split_description(card.description);
+
+								for (const auto& line : split_input)
+								{
+									auto temp_desc = fmt::format("	\\subitem {}", line);
+									file->info(temp_desc);
+								}
+							}
 
 							// Save the label of the card and each work hour here for later access
 							work_hour[label] += card.hour;
