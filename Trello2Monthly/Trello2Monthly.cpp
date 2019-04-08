@@ -124,7 +124,11 @@ class monthly
 			// Handle response headers arriving.
 			.then([=](http_response response)
 		{
-			console->info("Received response status code from custom field querry: {}.", response.status_code());
+			if (response.status_code() != status_codes::OK)
+			{
+				console->critical("Received response status code from Custom Field querry: {}.", response.status_code());
+				throw;
+			}
 
 			// Extract JSON out of the response
 			return response.extract_utf8string();
@@ -163,8 +167,12 @@ class monthly
 			// Handle response headers arriving.
 			.then([=](http_response response)
 		{
-			console->info("Received response status code from Boards querry: {}.", response.status_code());
-
+			if (response.status_code() != status_codes::OK)
+			{
+				console->critical("Received response status code from Boards querry: {}.", response.status_code());
+				throw;
+			}
+			
 			// Extract JSON out of the response
 			return response.extract_utf8string();
 		})
@@ -192,16 +200,23 @@ class monthly
 
 			.then([=](std::vector<boards_info> input)
 		{
+			// If there is only one active then proceed without user interation
+			if (input.size() == 1)
+			{
+				console->info("Detect only one active board. Proceed without input.");
+				return input.at(0).id;
+			}
+
 			for (size_t i = 0; i < input.size(); ++i)
 			{
 				console->info("[{}] board: \"{}\" is active.", i, input.at(i).name, input.at(i).id);
 			}
 
-			console->info("Please enter board number you wish to convert to TEX:");
+			console->info("Please enter board number you wish to convert to Monthly Status Report:");
 
 			int choice;
 			std::cin >> choice;
-
+			std::cin.get();
 			// Set the board name as the date/month for the report
 			date_ = get_date(input.at(choice).name);
 
@@ -236,7 +251,11 @@ class monthly
 			// Handle response headers arriving.
 			.then([=](http_response response)
 		{
-			console->info("Received response status code from List querry: {}.", response.status_code());
+			if (response.status_code() != status_codes::OK)
+			{
+				console->critical("Received response status code from Lists querry: {}.", response.status_code());
+				throw;
+			}
 
 			// Extract JSON out of the response
 			return response.extract_utf8string();
@@ -289,7 +308,11 @@ class monthly
 			// Handle response headers arriving.
 			.then([=](http_response response)
 		{
-			console->info("Received response status code from Card querry: {}.", response.status_code());
+			if (response.status_code() != status_codes::OK)
+			{
+				console->critical("Received response status code from Card querry: {}.", response.status_code());
+				throw;
+			}
 
 			// Extract JSON out of the response
 			return response.extract_utf8string();
@@ -354,7 +377,11 @@ class monthly
 			// Handle response headers arriving.
 			.then([=](http_response response)
 		{
-			console->info("Received response status code from Label querry: {}", response.status_code());
+			if (response.status_code() != status_codes::OK)
+			{
+				console->critical("Received response status code from Labels querry: {}.", response.status_code());
+				throw;
+			}
 
 			// Extract JSON out of the response
 			return response.extract_utf8string();
@@ -574,7 +601,7 @@ class monthly
 				{
 					if (card.labels.find("Hour Breakdown") != card.labels.end())
 					{
-						file->info("\\noindent {}", card.name);
+						file->info("\\noindent {}\n", card.name);
 					}
 				}
 			}
@@ -605,6 +632,10 @@ public:
 	{
 		start_logger();
 		process_data();
+
+		console->info("++++++++++++++++++++++++++++++++++++++++++++");
+		console->info("+ Completed. Please press any key to exit. +");
+		console->info("++++++++++++++++++++++++++++++++++++++++++++");
 	}
 	std::shared_ptr<spdlog::logger> console = nullptr;
 	std::shared_ptr<spdlog::logger> file = nullptr;
