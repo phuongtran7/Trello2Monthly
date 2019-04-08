@@ -595,15 +595,16 @@ class monthly
 
 				// Write hour breakdown section
 				file->info("\\subsection{Hour Breakdown}");
-
+				file->info("\\begin{itemize}");
 				// Loop through each card
 				for (const auto& card : cards)
 				{
 					if (card.labels.find("Hour Breakdown") != card.labels.end())
 					{
-						file->info("\\noindent {}\n", card.name);
+						file->info("		\\item {}", card.name);
 					}
 				}
+				file->info("\\end{itemize}");
 			}
 		}
 
