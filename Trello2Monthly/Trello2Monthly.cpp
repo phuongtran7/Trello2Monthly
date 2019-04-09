@@ -34,6 +34,7 @@ class monthly
 	std::optional<string_t> trello_secrect_;
 	std::string author_;
 	std::optional<std::string> date_;
+	std::string filename_;
 
 	// Create http_client to send the request.
 	http_client client_;
@@ -172,7 +173,7 @@ class monthly
 				console->critical("Received response status code from Boards querry: {}.", response.status_code());
 				throw;
 			}
-			
+
 			// Extract JSON out of the response
 			return response.extract_utf8string();
 		})
@@ -204,6 +205,10 @@ class monthly
 			if (input.size() == 1)
 			{
 				console->info("Detect only one active board. Proceed without input.");
+				// Set the board name as the date/month for the report
+				date_ = get_date(input.at(0).name);
+				// Set file name
+				filename_ = input.at(0).name;
 				return input.at(0).id;
 			}
 
@@ -219,7 +224,8 @@ class monthly
 			std::cin.get();
 			// Set the board name as the date/month for the report
 			date_ = get_date(input.at(choice).name);
-
+			// Set file name
+			filename_ = input.at(choice).name;
 			// Return the chosen board ID
 			return input.at(choice).id;
 		});
@@ -432,7 +438,7 @@ class monthly
 		return unique_labels;
 	}
 
-	bool start_logger()
+	bool start_console_log()
 	{
 		try
 		{
@@ -442,9 +448,21 @@ class monthly
 			console_sink->set_pattern("[%^%l%$] %v");
 
 			console = std::make_shared<spdlog::logger>("console_sink", console_sink);
+		}
+		catch (const spdlog::spdlog_ex &ex)
+		{
+			std::cout << "Console log init failed: " << ex.what() << std::endl;
+			return false;
+		}
+		return true;
+	}
 
+	bool start_file_log(std::string filename)
+	{
+		try
+		{
 			// File sink
-			auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("Monthly Status Report.tex", true);
+			auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true);
 			file_sink->set_level(spdlog::level::info);
 			file_sink->set_pattern("%v");
 
@@ -453,7 +471,7 @@ class monthly
 		}
 		catch (const spdlog::spdlog_ex &ex)
 		{
-			std::cout << "Log init failed: " << ex.what() << std::endl;
+			std::cout << "File log init failed: " << ex.what() << std::endl;
 			return false;
 		}
 		return true;
@@ -485,6 +503,17 @@ class monthly
 		}
 	}
 
+	std::unordered_map<std::string, std::string> create_filename_map() const
+	{
+		std::vector<std::string> extensions{ "tex", "docx", "aux", "out", "log", "synctex.gz" };
+		std::unordered_map<std::string, std::string> file_map;
+		for (const auto& ext : extensions)
+		{
+			file_map[ext] = fmt::format("{}.{}", filename_, ext);
+		}
+		return file_map;
+	}
+
 	void process_data()
 	{
 		trello_secrect_ = parse_config();
@@ -498,6 +527,10 @@ class monthly
 		const auto board_id = get_active_boards();
 		const auto labels = get_labels(board_id);
 		const auto lists = get_lists(board_id);
+
+		auto file_name_map = create_filename_map();
+		// Start file logger
+		start_file_log(file_name_map.at("tex"));
 
 		// Write header to file
 		file->info(make_header());
@@ -612,16 +645,16 @@ class monthly
 		file->info("\\end{document}");
 
 		// Convert to PDF
-		std::system(R"(pdflatex "Monthly Status Report.tex")");
+		std::system((fmt::format(R"(pdflatex "{}")", file_name_map.at("tex"))).c_str());
 
 		// Convert to word if pandoc is installed
-		std::system(R"(pandoc -s "Monthly Status Report.tex" -o "Monthly Status Report.docx")");
+		std::system((fmt::format(R"(pandoc -s "{}" -o "{}")", file_name_map.at("tex"), file_name_map.at("docx"))).c_str());
 
 		// Clean up
-		std::remove("Monthly Status Report.aux");
-		std::remove("Monthly Status Report.log");
-		std::remove("Monthly Status Report.out");
-		std::remove("Monthly Status Report.aux");
+		std::remove(fmt::format("{}", file_name_map.at("aux")).c_str());
+		std::remove(fmt::format("{}", file_name_map.at("log")).c_str());
+		std::remove(fmt::format("{}", file_name_map.at("out")).c_str());
+		std::remove(fmt::format("{}", file_name_map.at("synctex.gz")).c_str());
 	}
 
 public:
@@ -631,7 +664,7 @@ public:
 
 	void run()
 	{
-		start_logger();
+		start_console_log();
 		process_data();
 
 		console->info("++++++++++++++++++++++++++++++++++++++++++++");
