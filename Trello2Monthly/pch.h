@@ -11,6 +11,7 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include <set>
+#include <unordered_map>
 #include <fstream>
 #include "rapidjson/document.h"
 #include <optional>
