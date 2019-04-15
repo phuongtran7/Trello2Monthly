@@ -17,4 +17,6 @@
 #include <optional>
 #include "cpptoml.h"
 #include <regex>
+#include <filesystem>
+#include <cstdio>
 #endif //PCH_H

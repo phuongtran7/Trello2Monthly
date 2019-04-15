@@ -3,10 +3,13 @@
 
 #include "pch.h"
 
+// Current file version
+constexpr auto version = "v1.0.3";
+
 using namespace utility;                    // Common utilities like string conversions
 using namespace web;                        // Common features like URIs.
-using namespace web::http;                  // Common HTTP functionality
-using namespace web::http::client;          // HTTP client features
+using namespace http;                  // Common HTTP functionality
+using namespace client;          // HTTP client features
 using namespace concurrency::streams;       // Asynchronous streams
 
 class monthly
@@ -38,6 +41,9 @@ class monthly
 
 	// Create http_client to send the request.
 	http_client client_;
+	http_client update_client_;
+
+	
 
 	// Due to the way new paragraph is represented in the Card's description, there will be two newline
 	// in the Card's description.
@@ -212,7 +218,7 @@ class monthly
 				return input.at(0).id;
 			}
 
-			for (size_t i = 0; i < input.size(); ++i)
+			for (auto i = 0; i < input.size(); ++i)
 			{
 				console->info("[{}] board: \"{}\" is active.", i, input.at(i).name, input.at(i).id);
 			}
@@ -658,7 +664,7 @@ class monthly
 	}
 
 public:
-	monthly() : client_(U("https://api.trello.com"))
+	monthly() : client_(U("https://api.trello.com")), update_client_(U("https://api.github.com"))
 	{
 	}
 
@@ -671,8 +677,8 @@ public:
 		console->info("+ Completed. Please press any key to exit. +");
 		console->info("++++++++++++++++++++++++++++++++++++++++++++");
 	}
-	std::shared_ptr<spdlog::logger> console = nullptr;
-	std::shared_ptr<spdlog::logger> file = nullptr;
+	std::shared_ptr<spdlog::logger> console{};
+	std::shared_ptr<spdlog::logger> file{};
 };
 
 int main(int argc, char* argv[])
