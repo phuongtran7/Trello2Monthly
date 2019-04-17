@@ -4,7 +4,7 @@
 #include "pch.h"
 
 // Current file version
-constexpr auto version = "v1.0.4";
+constexpr auto version = "v1.0.5";
 
 using namespace utility;                    // Common utilities like string conversions
 using namespace web;                        // Common features like URIs.
@@ -69,7 +69,7 @@ class monthly
 
 							const auto laster_release = document.FindMember("tag_name")->value.GetString();
 
-							if (version != laster_release)
+							if (std::strcmp(version, laster_release))
 							{
 								// Return the url so that we can download it.
 								auto url = document.FindMember("assets")->value.GetArray();
@@ -818,6 +818,8 @@ public:
 		}
 		else
 		{
+
+			std::filesystem::remove("Updater.exe.Trello_Old");
 			process_data();
 			console->info("++++++++++++++++++++++++++++++++++++++++++++");
 			console->info("+ Completed. Please press ENTER to exit. +");

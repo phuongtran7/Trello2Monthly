@@ -36,7 +36,12 @@ public:
 			{
 				if (file.path().extension().generic_string() == ".Trello_Old")
 				{
-					std::filesystem::remove(file);
+					// Skip over old Updater as it cannot delete itself while running
+					// The Trello2Monthly.exe will handle that.
+					if (file.path().stem().generic_string() != "Updater.exe")
+					{
+						std::filesystem::remove(file);
+					}
 				}
 			}
 			std::filesystem::remove_all("Temp");
