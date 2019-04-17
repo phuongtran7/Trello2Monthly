@@ -17,6 +17,10 @@ Secrects.h
 # JSON
 *.json
 
+# Temporary folder for downloaded files
+Temp/
+Update.zip
+
 # TEX files
 *.tex
 *.aux
