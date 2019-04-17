@@ -4,7 +4,7 @@
 #include "pch.h"
 
 // Current file version
-constexpr auto version = "v1.0.3";
+constexpr auto version = "v1.0.4";
 
 using namespace utility;                    // Common utilities like string conversions
 using namespace web;                        // Common features like URIs.
@@ -61,7 +61,7 @@ class monthly
 					// Extract JSON out of the response
 					return response.extract_utf8string();
 				})
-					// parse JSON
+			// parse JSON
 					.then([=](std::string json_data)
 						{
 							rapidjson::Document document;
@@ -154,47 +154,28 @@ class monthly
 			extractor.extract(L"Update.zip", L"Temp/");
 
 			std::filesystem::remove("Update.zip");
-
 		}
 		catch (const std::exception & e)
 		{
-			console->critical("Error: {}", e.what());
-		}
-		
-	}
-
-	// Iterate through the extracted files to determine which one should be updated
-	void update_files() const
-	{
-		// Loop through all the files in the temp directory
-		for (auto& file : std::filesystem::directory_iterator("Temp"))
-		{
-			// Rename the file
-			auto new_file_name = fmt::format("{}.Trello_Old", file.path().filename().generic_string());
-			try
-			{
-				std::filesystem::rename(file.path().filename(), new_file_name);
-				std::filesystem::copy(std::filesystem::absolute(file), std::filesystem::absolute(std::filesystem::current_path()), std::filesystem::copy_options::overwrite_existing);
-
-			}
-			catch (const std::exception & e)
-			{
-				console->critical("Error: {}", e.what());
-			}
+			std::cout << "Error: " << e.what() << "\n";
 		}
 	}
 
-	// Remove old files that was left over by the previous update
-	void remove_old_files() const
+	void call_updater()
 	{
-		for (auto& file : std::filesystem::directory_iterator(std::filesystem::current_path()))
-		{
-			if (file.path().extension().generic_string() == ".Trello_Old")
-			{
-				std::filesystem::remove(file);
-			}
-		}
-		std::filesystem::remove("Temp");
+		STARTUPINFO lp_startup_info;
+		PROCESS_INFORMATION lp_process_info;
+
+		ZeroMemory(&lp_startup_info, sizeof(lp_startup_info));
+		lp_startup_info.cb = sizeof(lp_startup_info);
+		ZeroMemory(&lp_process_info, sizeof(lp_process_info));
+
+		CreateProcess(L"Updater.exe",
+			nullptr, nullptr, nullptr,
+			NULL, NULL, nullptr, nullptr,
+			&lp_startup_info,
+			&lp_process_info
+		);
 	}
 
 	// Due to the way new paragraph is represented in the Card's description, there will be two newline
@@ -245,9 +226,9 @@ class monthly
 			"\\makeatletter\n"
 			"\\renewcommand{\\@seccntformat}[1]{\n"
 			"  \\ifcsname prefix@#1\\endcsname\n"
-			"	\\csname prefix@#1\\endcsname\n"
+			"   \\csname prefix@#1\\endcsname\n"
 			"  \\else\n"
-			"	\\csname the#1\\endcsname\\quad\n"
+			"   \\csname the#1\\endcsname\\quad\n"
 			"  \\fi\n"
 			"  }\n"
 			"\\newcommand\\prefix@section{For the week of }\n"
@@ -728,7 +709,7 @@ class monthly
 						// A card can have multiple label and it will appear at multiple section.
 						if (card.labels.find(label) != card.labels.end())
 						{
-							auto temp_string = fmt::format("	\\item {}", card.name);
+							auto temp_string = fmt::format("    \\item {}", card.name);
 							file->info(temp_string);
 
 							// If the card has description then write it into the subitem. Thanks Al for this suggestion
@@ -738,7 +719,7 @@ class monthly
 
 								for (const auto& line : split_input)
 								{
-									auto temp_desc = fmt::format("	\\subitem {}", line);
+									auto temp_desc = fmt::format("  \\subitem {}", line);
 									file->info(temp_desc);
 								}
 							}
@@ -754,7 +735,7 @@ class monthly
 				file->info("\\begin{itemize}");
 				for (const auto& item : work_hour)
 				{
-					file->info("		\\item {}: {} hours.\n", item.first, item.second);
+					file->info("        \\item {}: {} hours.\n", item.first, item.second);
 				}
 				file->info("\\end{itemize}");
 			}
@@ -777,7 +758,7 @@ class monthly
 						// A card can have multiple label and it will appear at multiple sections.
 						if (card.labels.find(label) != card.labels.end())
 						{
-							auto temp_string = fmt::format("	\\item {}", card.name);
+							auto temp_string = fmt::format("    \\item {}", card.name);
 							file->info(temp_string);
 						}
 					}
@@ -792,7 +773,7 @@ class monthly
 				{
 					if (card.labels.find("Hour Breakdown") != card.labels.end())
 					{
-						file->info("		\\item {}", card.name);
+						file->info("        \\item {}", card.name);
 					}
 				}
 				file->info("\\end{itemize}");
@@ -823,16 +804,27 @@ public:
 	void run()
 	{
 		start_console_log();
-		//remove_old_files();
-		//process_data();
-
-		download_update(check_for_update());
-		extract_files();
-		update_files();
-
-		console->info("++++++++++++++++++++++++++++++++++++++++++++");
-		console->info("+ Completed. Please press ENTER to exit. +");
-		console->info("++++++++++++++++++++++++++++++++++++++++++++");
+		
+		auto update = check_for_update();
+		if (update.has_value())
+		{
+			download_update(update);
+			extract_files();
+			console->info("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+			console->info("+ New update available. Please press ENTER to continue. +");
+			console->info("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+			std::getchar();
+			call_updater();
+		}
+		else
+		{
+			process_data();
+			console->info("++++++++++++++++++++++++++++++++++++++++++++");
+			console->info("+ Completed. Please press ENTER to exit. +");
+			console->info("++++++++++++++++++++++++++++++++++++++++++++");
+			std::getchar();
+		}
+		
 	}
 	std::shared_ptr<spdlog::logger> console{};
 	std::shared_ptr<spdlog::logger> file{};
@@ -842,7 +834,5 @@ int main(int argc, char* argv[])
 {
 	monthly new_month;
 	new_month.run();
-
-	std::getchar();
 	return 0;
 }
