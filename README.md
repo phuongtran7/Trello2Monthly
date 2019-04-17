@@ -46,5 +46,9 @@ author = "AUTHOR NAME"
 ```
 and then put it next to the compiled executable.
 
-4. Download <a href="https://www.7-zip.org/download.html">7-Zip</a> and copy `7z.dll` into executable's folder.
+4. Download and install <a href="https://www.7-zip.org/download.html">7-Zip</a> and copy `7z.dll` into executable's folder.
 5. Start the executable.
+
+## Related Projects
+1. <a href="https://github.com/phuongtran7/Trello_2_Monthly_CMake">Trello_2_Monthly_CMake</a>: A test project trying to get Trello2Monthly to work on Linux.
+2. <a href="https://github.com/phuongtran7/Trello2Monthly_Service">Trello2Monthly_Service</a>: A client and server microservice for Trello2Monthly project. Instead of installing MiKTeX and Pandoc on each of the computer. The user can choose to install them once on the server machine. The client, which runs on other machines, can send the data over to the server to compile the PFD and Word document and then receive it back.
