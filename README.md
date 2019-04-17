@@ -1,7 +1,9 @@
 # Trello2Monthly
 <h4 align="center">A command line program to build Monthly Status Report.</h4>
 
-Trello2Monthly is a command line program to generate PDF and Word files from Trello. Trello2Monthly uses <a href="https://github.com/Microsoft/cpprestsdk">cpprestsdk</a> and <a href="https://github.com/gabime/spdlog">spdlog</a> and <a href="https://github.com/skystrife/cpptoml">cpptoml</a>.
+Trello2Monthly is a command line program to generate PDF and Word files from Trello. Trello2Monthly uses <a href="https://github.com/Microsoft/cpprestsdk">cpprestsdk</a> and <a href="https://github.com/gabime/spdlog">spdlog</a>, <a href="https://github.com/skystrife/cpptoml">cpptoml</a> and <a href="https://github.com/rikyoz/bit7z">bit7z</a>.
+
+The project also needs 7-Zip DLL to extract the data from downloaded update files.
 
 ## Installation
 ### Windows
@@ -43,5 +45,5 @@ token = "TOKEN"
 author = "AUTHOR NAME"
 ```
 and then put it next to the compiled executable.
-
-4. Start the executable.
+4. Download <a href="https://www.7-zip.org/download.html">7-Zip</a> and copy `7z.dll` into executable's folder.
+5. Start the executable.
