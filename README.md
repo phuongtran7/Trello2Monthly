@@ -45,5 +45,6 @@ token = "TOKEN"
 author = "AUTHOR NAME"
 ```
 and then put it next to the compiled executable.
+
 4. Download <a href="https://www.7-zip.org/download.html">7-Zip</a> and copy `7z.dll` into executable's folder.
 5. Start the executable.
