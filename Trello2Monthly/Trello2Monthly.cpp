@@ -3,8 +3,6 @@
 
 #include "pch.h"
 
-
-
 // Current file version
 constexpr auto version = "v1.0.3";
 
@@ -47,13 +45,6 @@ class monthly
 
 	std::optional<std::string> check_for_update()
 	{
-		if (std::filesystem::exists("Trello2Monthly_OLD.exe"))
-		{
-			// If there is an old file then it means this just updated. Will delete old file and ignore the update.
-			std::remove("Trello2Monthly_OLD.exe");
-			return std::nullopt;
-		}
-
 		uri_builder builder;
 		builder.set_path(U("/repos/phuongtran7/Trello2Monthly/releases/latest"));
 		pplx::task<std::string> get_release_task = update_client_.request(methods::GET, builder.to_string())
@@ -70,7 +61,7 @@ class monthly
 					// Extract JSON out of the response
 					return response.extract_utf8string();
 				})
-			// parse JSON
+					// parse JSON
 					.then([=](std::string json_data)
 						{
 							rapidjson::Document document;
@@ -132,8 +123,6 @@ class monthly
 						// ReSharper disable once CppExpressionWithoutSideEffects
 						is.read_to_end(rwbuf).get();
 						rwbuf.close().get();
-
-						extract_files();
 					});
 
 					// Wait for all the outstanding I/O to complete and handle any exceptions
@@ -154,9 +143,6 @@ class monthly
 	{
 		try
 		{
-			// Rename the current exe
-			//std::filesystem::rename("Trello2Monthly.exe", "Trello2Monthly_OLD.exe");
-
 			// Extract the zip file
 			const bit7z::Bit7zLibrary lib(L"7z.dll");
 			bit7z::BitExtractor extractor(lib, bit7z::BitFormat::Zip);
@@ -167,16 +153,6 @@ class monthly
 			// Extract and override the current files
 			extractor.extract(L"Update.zip", L"Temp/");
 
-			// Loop through all the files in the temp directory and then copy it over
-			// the current working folder
-			for (auto& p : std::filesystem::directory_iterator("Temp"))
-			{
-				std::cout << p.path() << '\n';
-				std::filesystem::copy(std::filesystem::absolute(p), std::filesystem::absolute(std::filesystem::current_path()) , std::filesystem::copy_options::overwrite_existing);
-			}
-
-
-			std::filesystem::remove("Temp");
 			std::filesystem::remove("Update.zip");
 
 		}
@@ -187,8 +163,42 @@ class monthly
 		
 	}
 
+	// Iterate through the extracted files to determine which one should be updated
+	void update_files() const
+	{
+		// Loop through all the files in the temp directory
+		for (auto& file : std::filesystem::directory_iterator("Temp"))
+		{
+			// Rename the file
+			auto new_file_name = fmt::format("{}.Trello_Old", file.path().filename().generic_string());
+			try
+			{
+				std::filesystem::rename(file.path().filename(), new_file_name);
+				std::filesystem::copy(std::filesystem::absolute(file), std::filesystem::absolute(std::filesystem::current_path()), std::filesystem::copy_options::overwrite_existing);
+
+			}
+			catch (const std::exception & e)
+			{
+				console->critical("Error: {}", e.what());
+			}
+		}
+	}
+
+	// Remove old files that was left over by the previous update
+	void remove_old_files() const
+	{
+		for (auto& file : std::filesystem::directory_iterator(std::filesystem::current_path()))
+		{
+			if (file.path().extension().generic_string() == ".Trello_Old")
+			{
+				std::filesystem::remove(file);
+			}
+		}
+		std::filesystem::remove("Temp");
+	}
+
 	// Due to the way new paragraph is represented in the Card's description, there will be two newline
-	// in the Card's description.
+	// in the Card's description.p
 	std::vector<std::string> split_description(const std::string& input) const
 	{
 		const std::regex expression(R"(\n\n)");
@@ -813,13 +823,15 @@ public:
 	void run()
 	{
 		start_console_log();
+		//remove_old_files();
 		//process_data();
 
 		download_update(check_for_update());
 		extract_files();
+		update_files();
 
 		console->info("++++++++++++++++++++++++++++++++++++++++++++");
-		console->info("+ Completed. Please press any key to exit. +");
+		console->info("+ Completed. Please press ENTER to exit. +");
 		console->info("++++++++++++++++++++++++++++++++++++++++++++");
 	}
 	std::shared_ptr<spdlog::logger> console{};
@@ -832,6 +844,5 @@ int main(int argc, char* argv[])
 	new_month.run();
 
 	std::getchar();
-
 	return 0;
 }
