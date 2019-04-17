@@ -5,9 +5,9 @@ Trello2Monthly is a command line program to generate PDF and Word files from Tre
 
 ## Installation
 ### Windows
-If you don't want to compile the program by yourself, you can head over the release tab a get a pre-compiled version.
+If you don't want to compile the program by yourself, you can head over the <a href="https://github.com/phuongtran7/Trello2Monthly/releases">releases</a> tab a get a pre-compiled version.
 
-1. Install cpprestsdk and spdlog with Microsoft's <a href="https://github.com/Microsoft/vcpkg">vcpkg</a>.
+1. Install cpprestsdk, spdlog and cpptoml with Microsoft's <a href="https://github.com/Microsoft/vcpkg">vcpkg</a>.
 2. Clone the project: `git clone https://github.com/phuongtran7/Trello2Monthly.git`.
 3. Build the project.
 
@@ -33,8 +33,8 @@ The user can mix the two ways of reporting hour in a same `Board`, however, the 
 
 ## Usage
 1. Install <a href="https://miktex.org/">MiKTeX</a> and update it.
-2. (Optional) Install <a href="https://pandoc.org/installing.html">Pandoc</a> if need Word file. 
-3. Get API key and Token from <a href="https://developers.trello.com/docs/api-introduction">Trello</a>.
+2. (Optional) Install <a href="https://pandoc.org/installing.html">Pandoc</a> if Word fil is needed. 
+3. Get API Key and Token from <a href="https://developers.trello.com/docs/api-introduction">Trello</a>.
 4. Prepare a `config.toml` file with content:
 ```
 [Configuration]
