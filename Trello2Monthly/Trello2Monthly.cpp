@@ -3,10 +3,13 @@
 
 #include "pch.h"
 
+// Current file version
+constexpr auto version = "v1.0.4";
+
 using namespace utility;                    // Common utilities like string conversions
 using namespace web;                        // Common features like URIs.
-using namespace web::http;                  // Common HTTP functionality
-using namespace web::http::client;          // HTTP client features
+using namespace http;                  // Common HTTP functionality
+using namespace client;          // HTTP client features
 using namespace concurrency::streams;       // Asynchronous streams
 
 class monthly
@@ -38,9 +41,145 @@ class monthly
 
 	// Create http_client to send the request.
 	http_client client_;
+	http_client update_client_;
+
+	std::optional<std::string> check_for_update()
+	{
+		uri_builder builder;
+		builder.set_path(U("/repos/phuongtran7/Trello2Monthly/releases/latest"));
+		pplx::task<std::string> get_release_task = update_client_.request(methods::GET, builder.to_string())
+
+			// Handle response headers arriving.
+			.then([=](http_response response)
+				{
+					if (response.status_code() != status_codes::OK)
+					{
+						console->critical("Received response status code from Get Latest Release querry: {}.", response.status_code());
+						throw;
+					}
+
+					// Extract JSON out of the response
+					return response.extract_utf8string();
+				})
+			// parse JSON
+					.then([=](std::string json_data)
+						{
+							rapidjson::Document document;
+							document.Parse(json_data.c_str());
+
+							const auto laster_release = document.FindMember("tag_name")->value.GetString();
+
+							if (version != laster_release)
+							{
+								// Return the url so that we can download it.
+								auto url = document.FindMember("assets")->value.GetArray();
+								std::string line;
+								for (auto& element : url)
+								{
+									line = element.FindMember("browser_download_url")->value.GetString();
+								}
+
+								return line;
+							}
+							return std::string("");
+						});
+
+				// Wait for all the outstanding I/O to complete and handle any exceptions
+				try
+				{
+					// ReSharper disable once CppExpressionWithoutSideEffects
+					get_release_task.wait();
+					auto return_val = get_release_task.get();
+
+					if (return_val.empty())
+					{
+						return std::nullopt;
+					}
+					return return_val;
+				}
+				catch (const std::exception & e)
+				{
+					console->critical("Error exception: {}", e.what());
+					return std::nullopt;
+				}
+	}
+
+	void download_update(std::optional<std::string> url)
+	{
+		if (url.has_value())
+		{
+			const auto complete_url = conversions::to_string_t(url.value());
+			http_client download_client(complete_url);
+
+			auto download = download_client.request(methods::GET)
+				.then([=](http_response response)
+					{
+						return response.body();
+					})
+
+				.then([=](istream is)
+					{
+						auto rwbuf = file_buffer<uint8_t>::open(U("Update.zip")).get();
+						// ReSharper disable once CppExpressionWithoutSideEffects
+						is.read_to_end(rwbuf).get();
+						rwbuf.close().get();
+					});
+
+					// Wait for all the outstanding I/O to complete and handle any exceptions
+					try
+					{
+						// ReSharper disable once CppExpressionWithoutSideEffects
+						download.wait();
+					}
+					catch (const std::exception & e)
+					{
+						console->critical("Error exception: {}", e.what());
+					}
+		}
+	}
+
+	// Extract the download zip file and override the old files
+	void extract_files() const
+	{
+		try
+		{
+			// Extract the zip file
+			const bit7z::Bit7zLibrary lib(L"7z.dll");
+			bit7z::BitExtractor extractor(lib, bit7z::BitFormat::Zip);
+
+			// Create temporary folder to store extracted files
+			std::filesystem::create_directory("Temp");
+
+			// Extract and override the current files
+			extractor.extract(L"Update.zip", L"Temp/");
+
+			std::filesystem::remove("Update.zip");
+		}
+		catch (const std::exception & e)
+		{
+			std::cout << "Error: " << e.what() << "\n";
+		}
+	}
+
+	void call_updater()
+	{
+		STARTUPINFO lp_startup_info;
+		PROCESS_INFORMATION lp_process_info;
+
+		ZeroMemory(&lp_startup_info, sizeof(lp_startup_info));
+		lp_startup_info.cb = sizeof(lp_startup_info);
+		ZeroMemory(&lp_process_info, sizeof(lp_process_info));
+
+		CreateProcess(L"Updater.exe",
+			nullptr, nullptr, nullptr,
+			NULL, NULL, nullptr, nullptr,
+			&lp_startup_info,
+			&lp_process_info
+		);
+	}
 
 	// Due to the way new paragraph is represented in the Card's description, there will be two newline
-	// in the Card's description.
+	// in the Card's description.p
 	std::vector<std::string> split_description(const std::string& input) const
 	{
 		const std::regex expression(R"(\n\n)");
@@ -87,9 +226,9 @@ class monthly
 			"\\makeatletter\n"
 			"\\renewcommand{\\@seccntformat}[1]{\n"
 			"  \\ifcsname prefix@#1\\endcsname\n"
-			"	\\csname prefix@#1\\endcsname\n"
+			"   \\csname prefix@#1\\endcsname\n"
 			"  \\else\n"
-			"	\\csname the#1\\endcsname\\quad\n"
+			"   \\csname the#1\\endcsname\\quad\n"
 			"  \\fi\n"
 			"  }\n"
 			"\\newcommand\\prefix@section{For the week of }\n"
@@ -124,36 +263,36 @@ class monthly
 
 			// Handle response headers arriving.
 			.then([=](http_response response)
-		{
-			if (response.status_code() != status_codes::OK)
-			{
-				console->critical("Received response status code from Custom Field querry: {}.", response.status_code());
-				throw;
-			}
+				{
+					if (response.status_code() != status_codes::OK)
+					{
+						console->critical("Received response status code from Custom Field querry: {}.", response.status_code());
+						throw;
+					}
 
-			// Extract JSON out of the response
-			return response.extract_utf8string();
-		})
+					// Extract JSON out of the response
+					return response.extract_utf8string();
+				})
 			// parse JSON
-			.then([=](std::string json_data)
-		{
-			rapidjson::Document document;
-			document.Parse(json_data.c_str());
+					.then([=](std::string json_data)
+						{
+							rapidjson::Document document;
+							document.Parse(json_data.c_str());
 
-			// If the reponse json empty then there is no custom field
-			return !document.GetArray().Empty();
-		});
-		// Wait for all the outstanding I/O to complete and handle any exceptions
-		try
-		{
-			// ReSharper disable once CppExpressionWithoutSideEffects
-			request_task.wait();
-		}
-		catch (const std::exception &e)
-		{
-			console->critical("Error exception: {}", e.what());
-		}
-		return request_task.get();
+							// If the reponse json empty then there is no custom field
+							return !document.GetArray().Empty();
+						});
+				// Wait for all the outstanding I/O to complete and handle any exceptions
+				try
+				{
+					// ReSharper disable once CppExpressionWithoutSideEffects
+					request_task.wait();
+				}
+				catch (const std::exception & e)
+				{
+					console->critical("Error exception: {}", e.what());
+				}
+				return request_task.get();
 	}
 
 	std::string get_active_boards()
@@ -167,80 +306,80 @@ class monthly
 
 			// Handle response headers arriving.
 			.then([=](http_response response)
-		{
-			if (response.status_code() != status_codes::OK)
-			{
-				console->critical("Received response status code from Boards querry: {}.", response.status_code());
-				throw;
-			}
-
-			// Extract JSON out of the response
-			return response.extract_utf8string();
-		})
-			// parse JSON
-			.then([=](std::string json_data)
-		{
-			rapidjson::Document document;
-			document.Parse(json_data.c_str());
-
-			std::vector<boards_info> list_of_open_boards;
-
-			// Only get the board that the "close" value is false
-			for (const auto& object : document.GetArray()) {
-				if (!object.FindMember("closed")->value.GetBool())
 				{
-					boards_info temp;
-					temp.name = object.FindMember("name")->value.GetString();
-					temp.id = object.FindMember("id")->value.GetString();
-					list_of_open_boards.emplace_back(temp);
-				}
-			}
+					if (response.status_code() != status_codes::OK)
+					{
+						console->critical("Received response status code from Boards querry: {}.", response.status_code());
+						throw;
+					}
 
-			return list_of_open_boards;
-		})
+					// Extract JSON out of the response
+					return response.extract_utf8string();
+				})
+			// parse JSON
+					.then([=](std::string json_data)
+						{
+							rapidjson::Document document;
+							document.Parse(json_data.c_str());
 
-			.then([=](std::vector<boards_info> input)
-		{
-			// If there is only one active then proceed without user interation
-			if (input.size() == 1)
-			{
-				console->info("Detect only one active board. Proceed without input.");
-				// Set the board name as the date/month for the report
-				date_ = get_date(input.at(0).name);
-				// Set file name
-				filename_ = input.at(0).name;
-				return input.at(0).id;
-			}
+							std::vector<boards_info> list_of_open_boards;
 
-			for (size_t i = 0; i < input.size(); ++i)
-			{
-				console->info("[{}] board: \"{}\" is active.", i, input.at(i).name, input.at(i).id);
-			}
+							// Only get the board that the "close" value is false
+							for (const auto& object : document.GetArray()) {
+								if (!object.FindMember("closed")->value.GetBool())
+								{
+									boards_info temp;
+									temp.name = object.FindMember("name")->value.GetString();
+									temp.id = object.FindMember("id")->value.GetString();
+									list_of_open_boards.emplace_back(temp);
+								}
+							}
 
-			console->info("Please enter board number you wish to convert to Monthly Status Report:");
+							return list_of_open_boards;
+						})
 
-			int choice;
-			std::cin >> choice;
-			std::cin.get();
-			// Set the board name as the date/month for the report
-			date_ = get_date(input.at(choice).name);
-			// Set file name
-			filename_ = input.at(choice).name;
-			// Return the chosen board ID
-			return input.at(choice).id;
-		});
+					.then([=](std::vector<boards_info> input)
+						{
+							// If there is only one active then proceed without user interation
+							if (input.size() == 1)
+							{
+								console->info("Detect only one active board. Proceed without input.");
+								// Set the board name as the date/month for the report
+								date_ = get_date(input.at(0).name);
+								// Set file name
+								filename_ = input.at(0).name;
+								return input.at(0).id;
+							}
 
-		// Wait for all the outstanding I/O to complete and handle any exceptions
-		try
-		{
-			// ReSharper disable once CppExpressionWithoutSideEffects
-			request_task.wait();
-		}
-		catch (const std::exception &e)
-		{
-			console->critical("Error exception: {}", e.what());
-		}
-		return request_task.get();
+							for (auto i = 0; i < input.size(); ++i)
+							{
+								console->info("[{}] board: \"{}\" is active.", i, input.at(i).name, input.at(i).id);
+							}
+
+							console->info("Please enter board number you wish to convert to Monthly Status Report:");
+
+							int choice;
+							std::cin >> choice;
+							std::cin.get();
+							// Set the board name as the date/month for the report
+							date_ = get_date(input.at(choice).name);
+							// Set file name
+							filename_ = input.at(choice).name;
+							// Return the chosen board ID
+							return input.at(choice).id;
+						});
+
+						// Wait for all the outstanding I/O to complete and handle any exceptions
+						try
+						{
+							// ReSharper disable once CppExpressionWithoutSideEffects
+							request_task.wait();
+						}
+						catch (const std::exception & e)
+						{
+							console->critical("Error exception: {}", e.what());
+						}
+						return request_task.get();
 	}
 
 	std::vector<list_info> get_lists(const std::string& board_id)
@@ -256,46 +395,46 @@ class monthly
 
 			// Handle response headers arriving.
 			.then([=](http_response response)
-		{
-			if (response.status_code() != status_codes::OK)
-			{
-				console->critical("Received response status code from Lists querry: {}.", response.status_code());
-				throw;
-			}
+				{
+					if (response.status_code() != status_codes::OK)
+					{
+						console->critical("Received response status code from Lists querry: {}.", response.status_code());
+						throw;
+					}
 
-			// Extract JSON out of the response
-			return response.extract_utf8string();
-		})
+					// Extract JSON out of the response
+					return response.extract_utf8string();
+				})
 			// parse JSON
-			.then([=](std::string json_data)
-		{
-			std::vector<list_info> list_id;
+					.then([=](std::string json_data)
+						{
+							std::vector<list_info> list_id;
 
-			rapidjson::Document document;
-			document.Parse(json_data.c_str());
+							rapidjson::Document document;
+							document.Parse(json_data.c_str());
 
-			// Loop through all the list and get the data
-			for (const auto& object : document.GetArray()) {
-				list_info temp_list;
-				temp_list.name = object.FindMember("name")->value.GetString();
-				temp_list.id = object.FindMember("id")->value.GetString();
-				list_id.emplace_back(temp_list);
-			}
-			return list_id;
-		});
+							// Loop through all the list and get the data
+							for (const auto& object : document.GetArray()) {
+								list_info temp_list;
+								temp_list.name = object.FindMember("name")->value.GetString();
+								temp_list.id = object.FindMember("id")->value.GetString();
+								list_id.emplace_back(temp_list);
+							}
+							return list_id;
+						});
 
-		// Wait for all the outstanding I/O to complete and handle any exceptions
-		try
-		{
-			// ReSharper disable once CppExpressionWithoutSideEffects
-			request_task.wait();
-		}
-		catch (const std::exception &e)
-		{
-			console->critical("Error exception: {}", e.what());
-			return {};
-		}
-		return request_task.get();
+				// Wait for all the outstanding I/O to complete and handle any exceptions
+				try
+				{
+					// ReSharper disable once CppExpressionWithoutSideEffects
+					request_task.wait();
+				}
+				catch (const std::exception & e)
+				{
+					console->critical("Error exception: {}", e.what());
+					return {};
+				}
+				return request_task.get();
 	}
 
 	// Get all the cards and its label, within a specific list
@@ -313,59 +452,59 @@ class monthly
 
 			// Handle response headers arriving.
 			.then([=](http_response response)
-		{
-			if (response.status_code() != status_codes::OK)
-			{
-				console->critical("Received response status code from Card querry: {}.", response.status_code());
-				throw;
-			}
-
-			// Extract JSON out of the response
-			return response.extract_utf8string();
-		})
-			// parse JSON
-			.then([=](std::string json_data)
-		{
-			std::vector<card_info> cards;
-
-			rapidjson::Document document;
-			document.Parse(json_data.c_str());
-
-			// Loop through all the cards
-			for (const auto& object : document.GetArray()) {
-				card_info temp_card;
-				temp_card.name = object.FindMember("name")->value.GetString();
-				temp_card.description = object.FindMember("desc")->value.GetString();
-				// Get all the labels that attached to the card
-				for (auto& temp_label_object : object["labels"].GetArray())
 				{
-					temp_card.labels.insert(temp_label_object.FindMember("name")->value.GetString());
-				}
-				// If there is a customField array
-				if (!object["customFieldItems"].Empty())
-				{
-					auto custom_field_array = object["customFieldItems"].GetArray();
-					for (auto& field : custom_field_array)
+					if (response.status_code() != status_codes::OK)
 					{
-						temp_card.hour = std::stof(field.FindMember("value")->value.FindMember("number")->value.GetString());
+						console->critical("Received response status code from Card querry: {}.", response.status_code());
+						throw;
 					}
-				}
-				cards.emplace_back(temp_card);
-			}
-			return cards;
-		});
 
-		// Wait for all the outstanding I/O to complete and handle any exceptions
-		try
-		{
-			// ReSharper disable once CppExpressionWithoutSideEffects
-			request_task.wait();
-		}
-		catch (const std::exception &e)
-		{
-			console->critical("Error exception: {}.", e.what());
-		}
-		return request_task.get();
+					// Extract JSON out of the response
+					return response.extract_utf8string();
+				})
+			// parse JSON
+					.then([=](std::string json_data)
+						{
+							std::vector<card_info> cards;
+
+							rapidjson::Document document;
+							document.Parse(json_data.c_str());
+
+							// Loop through all the cards
+							for (const auto& object : document.GetArray()) {
+								card_info temp_card;
+								temp_card.name = object.FindMember("name")->value.GetString();
+								temp_card.description = object.FindMember("desc")->value.GetString();
+								// Get all the labels that attached to the card
+								for (auto& temp_label_object : object["labels"].GetArray())
+								{
+									temp_card.labels.insert(temp_label_object.FindMember("name")->value.GetString());
+								}
+								// If there is a customField array
+								if (!object["customFieldItems"].Empty())
+								{
+									auto custom_field_array = object["customFieldItems"].GetArray();
+									for (auto& field : custom_field_array)
+									{
+										temp_card.hour = std::stof(field.FindMember("value")->value.FindMember("number")->value.GetString());
+									}
+								}
+								cards.emplace_back(temp_card);
+							}
+							return cards;
+						});
+
+				// Wait for all the outstanding I/O to complete and handle any exceptions
+				try
+				{
+					// ReSharper disable once CppExpressionWithoutSideEffects
+					request_task.wait();
+				}
+				catch (const std::exception & e)
+				{
+					console->critical("Error exception: {}.", e.what());
+				}
+				return request_task.get();
 	}
 
 	// The number of subsection in the latex will depends on the number of labels
@@ -382,43 +521,43 @@ class monthly
 
 			// Handle response headers arriving.
 			.then([=](http_response response)
-		{
-			if (response.status_code() != status_codes::OK)
-			{
-				console->critical("Received response status code from Labels querry: {}.", response.status_code());
-				throw;
-			}
+				{
+					if (response.status_code() != status_codes::OK)
+					{
+						console->critical("Received response status code from Labels querry: {}.", response.status_code());
+						throw;
+					}
 
-			// Extract JSON out of the response
-			return response.extract_utf8string();
-		})
+					// Extract JSON out of the response
+					return response.extract_utf8string();
+				})
 			// parse JSON
-			.then([=](std::string json_data)
-		{
-			std::vector<std::string> labels;
+					.then([=](std::string json_data)
+						{
+							std::vector<std::string> labels;
 
-			rapidjson::Document document;
-			document.Parse(json_data.c_str());
+							rapidjson::Document document;
+							document.Parse(json_data.c_str());
 
-			// Loop through all the label objects
-			for (const auto& object : document.GetArray()) {
-				// Get the name of the label
-				labels.emplace_back(object.FindMember("name")->value.GetString());
-			}
-			return labels;
-		});
+							// Loop through all the label objects
+							for (const auto& object : document.GetArray()) {
+								// Get the name of the label
+								labels.emplace_back(object.FindMember("name")->value.GetString());
+							}
+							return labels;
+						});
 
-		// Wait for all the outstanding I/O to complete and handle any exceptions
-		try
-		{
-			// ReSharper disable once CppExpressionWithoutSideEffects
-			request_task.wait();
-		}
-		catch (const std::exception &e)
-		{
-			console->critical("Error exception: {}", e.what());
-		}
-		return request_task.get();
+				// Wait for all the outstanding I/O to complete and handle any exceptions
+				try
+				{
+					// ReSharper disable once CppExpressionWithoutSideEffects
+					request_task.wait();
+				}
+				catch (const std::exception & e)
+				{
+					console->critical("Error exception: {}", e.what());
+				}
+				return request_task.get();
 	}
 
 	// Get all the labels that are used by the cards.
@@ -449,7 +588,7 @@ class monthly
 
 			console = std::make_shared<spdlog::logger>("console_sink", console_sink);
 		}
-		catch (const spdlog::spdlog_ex &ex)
+		catch (const spdlog::spdlog_ex & ex)
 		{
 			std::cout << "Console log init failed: " << ex.what() << std::endl;
 			return false;
@@ -469,7 +608,7 @@ class monthly
 			file = std::make_shared<spdlog::logger>("file_sink", file_sink);
 			file->flush_on(spdlog::level::info);
 		}
-		catch (const spdlog::spdlog_ex &ex)
+		catch (const spdlog::spdlog_ex & ex)
 		{
 			std::cout << "File log init failed: " << ex.what() << std::endl;
 			return false;
@@ -570,7 +709,7 @@ class monthly
 						// A card can have multiple label and it will appear at multiple section.
 						if (card.labels.find(label) != card.labels.end())
 						{
-							auto temp_string = fmt::format("	\\item {}", card.name);
+							auto temp_string = fmt::format("    \\item {}", card.name);
 							file->info(temp_string);
 
 							// If the card has description then write it into the subitem. Thanks Al for this suggestion
@@ -580,7 +719,7 @@ class monthly
 
 								for (const auto& line : split_input)
 								{
-									auto temp_desc = fmt::format("	\\subitem {}", line);
+									auto temp_desc = fmt::format("  \\subitem {}", line);
 									file->info(temp_desc);
 								}
 							}
@@ -596,7 +735,7 @@ class monthly
 				file->info("\\begin{itemize}");
 				for (const auto& item : work_hour)
 				{
-					file->info("		\\item {}: {} hours.\n", item.first, item.second);
+					file->info("        \\item {}: {} hours.\n", item.first, item.second);
 				}
 				file->info("\\end{itemize}");
 			}
@@ -619,7 +758,7 @@ class monthly
 						// A card can have multiple label and it will appear at multiple sections.
 						if (card.labels.find(label) != card.labels.end())
 						{
-							auto temp_string = fmt::format("	\\item {}", card.name);
+							auto temp_string = fmt::format("    \\item {}", card.name);
 							file->info(temp_string);
 						}
 					}
@@ -634,7 +773,7 @@ class monthly
 				{
 					if (card.labels.find("Hour Breakdown") != card.labels.end())
 					{
-						file->info("		\\item {}", card.name);
+						file->info("        \\item {}", card.name);
 					}
 				}
 				file->info("\\end{itemize}");
@@ -658,29 +797,42 @@ class monthly
 	}
 
 public:
-	monthly() : client_(U("https://api.trello.com"))
+	monthly() : client_(U("https://api.trello.com")), update_client_(U("https://api.github.com"))
 	{
 	}
 
 	void run()
 	{
 		start_console_log();
-		process_data();
-
-		console->info("++++++++++++++++++++++++++++++++++++++++++++");
-		console->info("+ Completed. Please press any key to exit. +");
-		console->info("++++++++++++++++++++++++++++++++++++++++++++");
+		
+		auto update = check_for_update();
+		if (update.has_value())
+		{
+			download_update(update);
+			extract_files();
+			console->info("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+			console->info("+ New update available. Please press ENTER to continue. +");
+			console->info("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+			std::getchar();
+			call_updater();
+		}
+		else
+		{
+			process_data();
+			console->info("++++++++++++++++++++++++++++++++++++++++++++");
+			console->info("+ Completed. Please press ENTER to exit. +");
+			console->info("++++++++++++++++++++++++++++++++++++++++++++");
+			std::getchar();
+		}
+		
 	}
-	std::shared_ptr<spdlog::logger> console = nullptr;
-	std::shared_ptr<spdlog::logger> file = nullptr;
+	std::shared_ptr<spdlog::logger> console{};
+	std::shared_ptr<spdlog::logger> file{};
 };
 
 int main(int argc, char* argv[])
 {
 	monthly new_month;
 	new_month.run();
-
-	std::getchar();
-
 	return 0;
 }
