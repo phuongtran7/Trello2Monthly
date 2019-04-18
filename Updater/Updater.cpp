@@ -67,6 +67,8 @@ public:
 			&lp_startup_info,
 			&lp_process_info
 		);
+		CloseHandle(lp_process_info.hProcess);
+		CloseHandle(lp_process_info.hThread);
 	}
 };
 

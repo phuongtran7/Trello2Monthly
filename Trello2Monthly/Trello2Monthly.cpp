@@ -176,6 +176,8 @@ class monthly
 			&lp_startup_info,
 			&lp_process_info
 		);
+		CloseHandle(lp_process_info.hProcess);
+		CloseHandle(lp_process_info.hThread);
 	}
 
 	// Due to the way new paragraph is represented in the Card's description, there will be two newline
@@ -804,16 +806,16 @@ public:
 	void run()
 	{
 		start_console_log();
-		
+		console->info("+++++++++++++++++++++++++++++++++++++++++++++");
+		console->info("+ Trello to Monthly. Current version {} +", version);
+		console->info("+++++++++++++++++++++++++++++++++++++++++++++");
+
 		auto update = check_for_update();
 		if (update.has_value())
 		{
 			download_update(update);
 			extract_files();
-			console->info("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-			console->info("+ New update available. Please press ENTER to continue. +");
-			console->info("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-			std::getchar();
+			console->info("New update available.");
 			call_updater();
 		}
 		else
