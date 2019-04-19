@@ -27,6 +27,7 @@ public:
 			}
 		}
 	}
+
 	// Remove old files that was left over by the previous update
 	static void remove_old_files()
 	{
