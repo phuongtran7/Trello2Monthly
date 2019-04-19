@@ -69,7 +69,7 @@ class monthly
 
 							const auto laster_release = document.FindMember("tag_name")->value.GetString();
 
-							if (std::strcmp(version, laster_release))
+							if (std::strcmp(version, laster_release) != 0)
 							{
 								// Return the url so that we can download it.
 								auto url = document.FindMember("assets")->value.GetArray();
@@ -161,7 +161,7 @@ class monthly
 		}
 	}
 
-	void call_updater()
+	void call_updater() const
 	{
 		STARTUPINFO lp_startup_info;
 		PROCESS_INFORMATION lp_process_info;
@@ -180,7 +180,7 @@ class monthly
 		CloseHandle(lp_process_info.hThread);
 	}
 
-	// Due to the way new paragraph is represented in the Card's description, there will be two newline
+	// Due to the way new paragraph is represented in the Card's description, there will be two newlines
 	// in the Card's description.p
 	std::vector<std::string> split_description(const std::string& input) const
 	{
@@ -199,6 +199,7 @@ class monthly
 		return elems;
 	}
 
+	// Parse Month-Year pair in the Board name to create the tex file
 	std::optional<std::string> get_date(const std::string& board_name) const
 	{
 		const std::regex expression(R"(\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ach)|Apr(?:il)|May|Jun(?:e)|Jul(?:y)|Aug(?:ust)|Sep(?:tember)|Oct(?:ober)|Nov(?:ember)|Dec(?:ember)?) (?:19[7-9]\d|2\d{3})(?=\D|$))");
@@ -353,7 +354,7 @@ class monthly
 								return input.at(0).id;
 							}
 
-							for (auto i = 0; i < input.size(); ++i)
+							for (auto i = 0; i < static_cast<int>(input.size()); ++i)
 							{
 								console->info("[{}] board: \"{}\" is active.", i, input.at(i).name, input.at(i).id);
 							}
