@@ -5,6 +5,8 @@
 #include <filesystem>
 #include <Windows.h>
 
+namespace fs = std::filesystem;
+
 class updater
 {
 public:
@@ -12,14 +14,14 @@ public:
 	static void update_files()
 	{
 		// Loop through all the files in the temp directory
-		for (auto& file : std::filesystem::directory_iterator("Temp"))
+		for (auto& file : fs::directory_iterator("Temp"))
 		{
 			// Rename the file
 			auto new_file_name = file.path().filename().generic_string() + ".Trello_Old";
 			try
 			{
-				std::filesystem::rename(file.path().filename(), new_file_name);
-				std::filesystem::copy(std::filesystem::absolute(file), std::filesystem::absolute(std::filesystem::current_path()), std::filesystem::copy_options::overwrite_existing);
+				fs::rename(file.path().filename(), new_file_name);
+				fs::copy(fs::absolute(file), fs::absolute(fs::current_path()), fs::copy_options::overwrite_existing);
 			}
 			catch (const std::exception & e)
 			{
@@ -33,7 +35,7 @@ public:
 	{
 		try
 		{
-			for (auto& file : std::filesystem::directory_iterator(std::filesystem::current_path()))
+			for (auto& file : fs::directory_iterator(fs::current_path()))
 			{
 				if (file.path().extension().generic_string() == ".Trello_Old")
 				{
@@ -41,11 +43,11 @@ public:
 					// The Trello2Monthly.exe will handle that.
 					if (file.path().stem().generic_string() != "Updater.exe")
 					{
-						std::filesystem::remove(file);
+						fs::remove(file);
 					}
 				}
 			}
-			std::filesystem::remove_all("Temp");
+			fs::remove_all("Temp");
 		}
 		catch (const std::exception & e)
 		{

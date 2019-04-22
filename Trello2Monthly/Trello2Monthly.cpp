@@ -12,6 +12,8 @@ using namespace http;                  // Common HTTP functionality
 using namespace client;          // HTTP client features
 using namespace concurrency::streams;       // Asynchronous streams
 
+namespace fs = std::filesystem;
+
 class monthly
 {
 	struct boards_info
@@ -148,12 +150,12 @@ class monthly
 			bit7z::BitExtractor extractor(lib, bit7z::BitFormat::Zip);
 
 			// Create temporary folder to store extracted files
-			std::filesystem::create_directory("Temp");
+			fs::create_directory("Temp");
 
 			// Extract and override the current files
 			extractor.extract(L"Update.zip", L"Temp/");
 
-			std::filesystem::remove("Update.zip");
+			fs::remove("Update.zip");
 		}
 		catch (const std::exception & e)
 		{
@@ -822,14 +824,14 @@ public:
 		else
 		{
 
-			std::filesystem::remove("Updater.exe.Trello_Old");
+			fs::remove("Updater.exe.Trello_Old");
 			process_data();
 			console->info("++++++++++++++++++++++++++++++++++++++++++++");
 			console->info("+ Completed. Please press ENTER to exit. +");
 			console->info("++++++++++++++++++++++++++++++++++++++++++++");
 			std::getchar();
 		}
-		
+
 	}
 	std::shared_ptr<spdlog::logger> console{};
 	std::shared_ptr<spdlog::logger> file{};
