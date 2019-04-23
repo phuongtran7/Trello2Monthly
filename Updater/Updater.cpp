@@ -55,7 +55,7 @@ public:
 		}
 	}
 
-	static void call_updater()
+	static void call_trello()
 	{
 		STARTUPINFO lp_startup_info;
 		PROCESS_INFORMATION lp_process_info;
@@ -79,5 +79,5 @@ int main()
 {
 	updater::update_files();
 	updater::remove_old_files();
-	updater::call_updater();
+	updater::call_trello();
 }
