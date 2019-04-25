@@ -33,7 +33,7 @@ class monthly
 	// Create http_client to send the request.
 	web::http::client::http_client client_;
 	web::http::client::http_client update_client_;
-
+	std::shared_ptr<std::unordered_map<std::string, std::string>> file_name_map_;
 	bool compare_version(const std::string& current, const std::string& release) const;
 
 	std::optional<std::string> check_for_update();
@@ -75,5 +75,8 @@ public:
 	std::shared_ptr<spdlog::logger> console{};
 	std::shared_ptr<spdlog::logger> file{};
 	monthly();
+
 	void run();
+
+	void shutdown();
 };

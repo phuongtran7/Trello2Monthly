@@ -32,8 +32,26 @@ void monthly::run()
 	{
 		fs::remove("Updater.exe.Trello_Old");
 		process_data();
-		std::getchar();
 	}
+}
+
+void monthly::shutdown()
+{
+	console->info("++++++++++++++++++++++++++++++++++++++++++++");
+	console->info("+ Completed. Please press ENTER to exit. +");
+	console->info("++++++++++++++++++++++++++++++++++++++++++++");
+
+	// Release resource;
+	file.reset();
+	console.reset();
+
+	// Clean up
+	spdlog::drop_all();
+	std::remove(fmt::format("{}", file_name_map_->at("tex")).c_str());
+	std::remove(fmt::format("{}", file_name_map_->at("aux")).c_str());
+	std::remove(fmt::format("{}", file_name_map_->at("log")).c_str());
+	std::remove(fmt::format("{}", file_name_map_->at("out")).c_str());
+	std::remove(fmt::format("{}", file_name_map_->at("synctex.gz")).c_str());
 }
 
 // Check whether the current version is less then previous version
@@ -687,9 +705,10 @@ void monthly::process_data()
 	const auto labels = get_labels(board_id);
 	const auto lists = get_lists(board_id);
 
-	auto file_name_map = create_filename_map();
+	file_name_map_ = std::make_shared<std::unordered_map<std::string, std::string>>(create_filename_map());
+
 	// Start file logger
-	start_file_log(file_name_map.at("tex"));
+	start_file_log(file_name_map_->at("tex"));
 
 	// Write header to file
 	file->info(make_header());
@@ -807,26 +826,9 @@ void monthly::process_data()
 	// Finish writing file
 	file->info("\\end{document}");
 
-	// Release resource;
-	file.reset();
-
 	// Convert to PDF
-	std::system((fmt::format(R"(pdflatex --interaction=batchmode "{}")", file_name_map.at("tex"))).c_str());
+	std::system((fmt::format(R"(pdflatex --interaction=batchmode "{}")", file_name_map_->at("tex"))).c_str());
 
 	// Convert to word if pandoc is installed
-	std::system((fmt::format(R"(pandoc -s "{}" -o "{}")", file_name_map.at("tex"), file_name_map.at("docx"))).c_str());
-
-	console->info("++++++++++++++++++++++++++++++++++++++++++++");
-	console->info("+ Completed. Please press ENTER to exit. +");
-	console->info("++++++++++++++++++++++++++++++++++++++++++++");
-
-	console.reset();
-
-	// Clean up
-	spdlog::drop_all();
-	std::remove(fmt::format("{}", file_name_map.at("tex")).c_str());
-	std::remove(fmt::format("{}", file_name_map.at("aux")).c_str());
-	std::remove(fmt::format("{}", file_name_map.at("log")).c_str());
-	std::remove(fmt::format("{}", file_name_map.at("out")).c_str());
-	std::remove(fmt::format("{}", file_name_map.at("synctex.gz")).c_str());
+	std::system((fmt::format(R"(pandoc -s "{}" -o "{}")", file_name_map_->at("tex"), file_name_map_->at("docx"))).c_str());
 }

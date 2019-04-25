@@ -8,5 +8,7 @@ int main(int argc, char* argv[])
 {
 	monthly new_month;
 	new_month.run();
+	new_month.shutdown();
+	std::getchar();
 	return 0;
 }
