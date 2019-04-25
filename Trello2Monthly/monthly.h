@@ -1,7 +1,7 @@
 #pragma once
 
 // Current file version
-constexpr auto version = "v1.0.6";
+constexpr auto version = "v1.0.7";
 
 class monthly
 {
@@ -33,6 +33,8 @@ class monthly
 	// Create http_client to send the request.
 	web::http::client::http_client client_;
 	web::http::client::http_client update_client_;
+
+	bool compare_version(const std::string& current, const std::string& release) const;
 
 	std::optional<std::string> check_for_update();
 

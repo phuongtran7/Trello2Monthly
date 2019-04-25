@@ -36,6 +36,33 @@ void monthly::run()
 	}
 }
 
+
+// Check whether the current version is less then previous version
+bool monthly::compare_version(const std::string& current, const std::string& release) const
+{
+	// Remove letter "v"
+	auto current_version = current.substr(1);
+	auto lastest_version = release.substr(1);
+
+	const std::regex expression(R"(\.)");
+
+	std::vector<std::string> current_vector;
+	std::vector<std::string> lastest_vector;
+
+	for (std::sregex_token_iterator iterator(current_version.begin(), current_version.end(), expression, -1); iterator != std::sregex_token_iterator(); ++iterator)
+	{
+		current_vector.push_back(*iterator);
+	}
+
+	for (std::sregex_token_iterator iterator(lastest_version.begin(), lastest_version.end(), expression, -1); iterator != std::sregex_token_iterator(); ++iterator)
+	{
+		lastest_vector.push_back(*iterator);
+	}
+
+	// Return true if current version is less than available release version
+	return std::lexicographical_compare(current_vector.begin(), current_vector.end(), lastest_vector.begin(), lastest_vector.end());
+}
+
 std::optional<std::string> monthly::check_for_update()
 {
 	uri_builder builder;
@@ -60,9 +87,10 @@ std::optional<std::string> monthly::check_for_update()
 						rapidjson::Document document;
 						document.Parse(json_data.c_str());
 
-						const auto laster_release = document.FindMember("tag_name")->value.GetString();
+						const auto latest_release = document.FindMember("tag_name")->value.GetString();
 
-						if (std::strcmp(version, laster_release) != 0)
+						// If current version is less than lastest release version
+						if (compare_version(version, latest_release))
 						{
 							// Return the url so that we can download it.
 							auto url = document.FindMember("assets")->value.GetArray();
@@ -180,9 +208,6 @@ std::vector<std::string> monthly::split_description(const std::string& input) co
 	const std::regex expression(R"(\n\n)");
 
 	std::vector<std::string> elems;
-
-	std::sregex_token_iterator iter(input.begin(), input.end(), expression, -1);
-	std::sregex_token_iterator end;
 
 	for (std::sregex_token_iterator iterator(input.begin(), input.end(), expression, -1); iterator != std::sregex_token_iterator(); ++iterator)
 	{
@@ -787,7 +812,7 @@ void monthly::process_data()
 	file.reset();
 
 	// Convert to PDF
-	std::system((fmt::format(R"(pdflatex  --interaction=batchmode "{}")", file_name_map.at("tex"))).c_str());
+	std::system((fmt::format(R"(pdflatex --interaction=batchmode "{}")", file_name_map.at("tex"))).c_str());
 
 	// Convert to word if pandoc is installed
 	std::system((fmt::format(R"(pandoc -s "{}" -o "{}")", file_name_map.at("tex"), file_name_map.at("docx"))).c_str());
