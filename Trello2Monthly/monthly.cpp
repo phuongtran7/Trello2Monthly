@@ -32,9 +32,6 @@ void monthly::run()
 	{
 		fs::remove("Updater.exe.Trello_Old");
 		process_data();
-		console->info("++++++++++++++++++++++++++++++++++++++++++++");
-		console->info("+ Completed. Please press ENTER to exit. +");
-		console->info("++++++++++++++++++++++++++++++++++++++++++++");
 		std::getchar();
 	}
 }
@@ -716,11 +713,15 @@ void monthly::process_data()
 						{
 							auto split_input = split_description(card.description);
 
+							// Due to converting to .docx break subitem line break so now we will use list for each of
+							// desciption line.
+							file->info("\\begin{itemize}");
 							for (const auto& line : split_input)
 							{
-								auto temp_desc = fmt::format("  \\subitem {}", line);
+								auto temp_desc = fmt::format("          \\item {}", line);
 								file->info(temp_desc);
 							}
+							file->info("\\end{itemize}");
 						}
 
 						// Save the label of the card and each work hour here for later access
@@ -782,13 +783,24 @@ void monthly::process_data()
 	// Finish writing file
 	file->info("\\end{document}");
 
+	// Release resource;
+	file.reset();
+
 	// Convert to PDF
 	std::system((fmt::format(R"(pdflatex "{}")", file_name_map.at("tex"))).c_str());
 
 	// Convert to word if pandoc is installed
 	std::system((fmt::format(R"(pandoc -s "{}" -o "{}")", file_name_map.at("tex"), file_name_map.at("docx"))).c_str());
 
+	console->info("++++++++++++++++++++++++++++++++++++++++++++");
+	console->info("+ Completed. Please press ENTER to exit. +");
+	console->info("++++++++++++++++++++++++++++++++++++++++++++");
+
+	console.reset();
+
 	// Clean up
+	spdlog::drop_all();
+	std::remove(fmt::format("{}", file_name_map.at("tex")).c_str());
 	std::remove(fmt::format("{}", file_name_map.at("aux")).c_str());
 	std::remove(fmt::format("{}", file_name_map.at("log")).c_str());
 	std::remove(fmt::format("{}", file_name_map.at("out")).c_str());
