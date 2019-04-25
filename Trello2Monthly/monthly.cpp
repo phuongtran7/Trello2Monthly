@@ -787,7 +787,7 @@ void monthly::process_data()
 	file.reset();
 
 	// Convert to PDF
-	std::system((fmt::format(R"(pdflatex "{}")", file_name_map.at("tex"))).c_str());
+	std::system((fmt::format(R"(pdflatex  --interaction=batchmode "{}")", file_name_map.at("tex"))).c_str());
 
 	// Convert to word if pandoc is installed
 	std::system((fmt::format(R"(pandoc -s "{}" -o "{}")", file_name_map.at("tex"), file_name_map.at("docx"))).c_str());
