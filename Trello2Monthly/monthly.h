@@ -72,10 +72,8 @@ class monthly
 
 	void process_data();
 public:
-	
 	std::shared_ptr<spdlog::logger> console{};
 	std::shared_ptr<spdlog::logger> file{};
 	monthly();
 	void run();
-	
 };

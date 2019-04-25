@@ -36,7 +36,6 @@ void monthly::run()
 	}
 }
 
-
 // Check whether the current version is less then previous version
 bool monthly::compare_version(const std::string& current, const std::string& release) const
 {
