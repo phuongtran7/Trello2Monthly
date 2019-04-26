@@ -803,8 +803,25 @@ void monthly::process_data()
 					{
 						auto temp_string = fmt::format("    \\item {}", card.name);
 						file->info(temp_string);
+
+						// If the card has description then write it into the subitem. Thanks Al for this suggestion
+						if (!card.description.empty())
+						{
+							auto split_input = split_description(card.description);
+
+							// Due to converting to .docx break subitem line break so now we will use list for each of
+							// desciption line.
+							file->info("    \\begin{itemize}");
+							for (const auto& line : split_input)
+							{
+								auto temp_desc = fmt::format("          \\item {}", line);
+								file->info(temp_desc);
+							}
+							file->info("    \\end{itemize}");
+						}
 					}
 				}
+
 				file->info("\\end{itemize}");
 			}
 
