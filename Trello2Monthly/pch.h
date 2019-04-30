@@ -6,6 +6,7 @@
 #include <iostream>
 #include <cpprest/http_client.h>
 #include <cpprest/filestream.h>
+#include <cpprest/http_headers.h>
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/sinks/basic_file_sink.h"
@@ -20,5 +21,4 @@
 #include <cstdio>
 #include <bit7zlibrary.hpp>
 #include <bitextractor.hpp>
-
 #endif //PCH_H
