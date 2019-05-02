@@ -21,4 +21,5 @@
 #include <cstdio>
 #include <bit7zlibrary.hpp>
 #include <bitextractor.hpp>
+#include <algorithm>
 #endif //PCH_H
