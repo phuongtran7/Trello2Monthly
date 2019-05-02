@@ -703,6 +703,7 @@ void monthly::process_data()
 	const auto lists = get_lists(board_id);
 
 	file_name_map_ = std::make_shared<std::unordered_map<std::string, std::string>>(create_filename_map());
+	special_characters_ = map_special_characters();
 
 	// Start file logger
 	start_file_log(file_name_map_->at("tex"));
@@ -713,7 +714,7 @@ void monthly::process_data()
 	// Start writing each list as a section
 	for (const auto& list : lists)
 	{
-		auto section_string = fmt::format("\\section{{{}}}", list.name);
+		auto section_string = fmt::format("\\section{{{}}}", sanitize_input(list.name));
 		file->info(section_string);
 
 		// Get the cards in this list with this label
@@ -734,7 +735,7 @@ void monthly::process_data()
 
 			for (const auto& label : available_lable)
 			{
-				auto label_string = fmt::format("\\subsubsection{{{}}}", label);
+				auto label_string = fmt::format("\\subsubsection{{{}}}", sanitize_input(label));
 				file->info(label_string);
 
 				file->info("\\begin{itemize}");
@@ -745,7 +746,7 @@ void monthly::process_data()
 					// A card can have multiple label and it will appear at multiple section.
 					if (card.labels.find(label) != card.labels.end())
 					{
-						auto temp_string = fmt::format("    \\item {}", card.name);
+						auto temp_string = fmt::format("    \\item {}", sanitize_input(card.name));
 						file->info(temp_string);
 
 						// If the card has description then write it into the subitem. Thanks Al for this suggestion
@@ -758,7 +759,7 @@ void monthly::process_data()
 							file->info("\\begin{itemize}");
 							for (const auto& line : split_input)
 							{
-								auto temp_desc = fmt::format("          \\item {}", line);
+								auto temp_desc = fmt::format("          \\item {}", sanitize_input(line));
 								file->info(temp_desc);
 							}
 							file->info("\\end{itemize}");
@@ -775,7 +776,7 @@ void monthly::process_data()
 			file->info("\\begin{itemize}");
 			for (const auto& item : work_hour)
 			{
-				file->info("        \\item {}: {} hours.\n", item.first, item.second);
+				file->info("        \\item {}: {} hours.\n", sanitize_input(item.first), item.second);
 			}
 			file->info("\\end{itemize}");
 		}
@@ -787,7 +788,7 @@ void monthly::process_data()
 			// Loop through all the labels that the cards in this list uses instead of all the labels in the board
 			for (const auto& label : available_lable)
 			{
-				auto label_string = fmt::format("\\subsubsection{{{}}}", label);
+				auto label_string = fmt::format("\\subsubsection{{{}}}", sanitize_input(label));
 				file->info(label_string);
 
 				file->info("\\begin{itemize}");
@@ -798,7 +799,7 @@ void monthly::process_data()
 					// A card can have multiple label and it will appear at multiple sections.
 					if (card.labels.find(label) != card.labels.end())
 					{
-						auto temp_string = fmt::format("    \\item {}", card.name);
+						auto temp_string = fmt::format("    \\item {}", sanitize_input(card.name));
 						file->info(temp_string);
 
 						// If the card has description then write it into the subitem. Thanks Al for this suggestion
@@ -811,7 +812,7 @@ void monthly::process_data()
 							file->info("    \\begin{itemize}");
 							for (const auto& line : split_input)
 							{
-								auto temp_desc = fmt::format("          \\item {}", line);
+								auto temp_desc = fmt::format("          \\item {}", sanitize_input(line));
 								file->info(temp_desc);
 							}
 							file->info("    \\end{itemize}");
@@ -830,7 +831,7 @@ void monthly::process_data()
 			{
 				if (card.labels.find("Hour Breakdown") != card.labels.end())
 				{
-					file->info("        \\item {}", card.name);
+					file->info("        \\item {}", sanitize_input(card.name));
 				}
 			}
 			file->info("\\end{itemize}");
@@ -845,4 +846,65 @@ void monthly::process_data()
 
 	// Convert to word if pandoc is installed
 	std::system((fmt::format(R"(pandoc -s "{}" -o "{}")", file_name_map_->at("tex"), file_name_map_->at("docx"))).c_str());
+}
+
+std::unordered_map<std::string, std::string> monthly::map_special_characters() const
+{
+	std::unordered_map<std::string, std::string> return_map;
+
+	// All the sanitized texts should have a space after them
+	return_map[R"(#)"] = R"(\# )";
+	return_map[R"($)"] = R"(\textdollar )";
+	return_map[R"(%)"] = R"(\percent )";
+	return_map[R"(&)"] = R"(\& )";
+	return_map[R"(\)"] = R"(\textbackslash )"; 
+	return_map[R"(^)"] = R"(\textcircumflex )";
+	return_map[R"(_)"] = R"(\textunderscore )";
+	return_map[R"({)"] = R"(\textbraceleft )";
+	return_map[R"(|)"] = R"(\textbar )";
+	return_map[R"(})"] = R"(\textbraceright )";
+	return_map[R"(~)"] = R"(\textasciitilde )";
+
+	return return_map;
+}
+
+std::string monthly::sanitize_input(std::string input) const
+{
+	for (const auto& pair : special_characters_) {
+
+		if (pair.first == R"(\)")
+		{
+			// Search for all backslash occurences in the string
+			// and store the index of the occurence
+			std::vector<size_t> positions; 
+			auto temp_index = input.find(pair.first);
+			while (temp_index != std::string::npos)
+			{
+				positions.push_back(temp_index);
+				temp_index = input.find(pair.first, temp_index + pair.first.length());
+			}
+
+			for (auto i : positions)
+			{
+				// Loop through all the positions found
+				std::string temp{};
+				temp.push_back(input.at(i + 1));
+				// If the character after the slash is not a special character then replace the slash with double slashes
+				if (special_characters_.find(temp) == special_characters_.end())
+				{
+					input.replace(i, pair.first.length(), pair.second);
+				}
+			}
+		}
+		else
+		{
+			const auto find = input.find(pair.first);
+			if (find != std::string::npos)
+			{
+				input.replace(find, pair.first.length(), pair.second);
+			}
+		}
+		
+	}
+	return input;
 }
