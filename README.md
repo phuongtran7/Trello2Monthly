@@ -10,10 +10,10 @@ The project also needs 7-Zip DLL to extract the data from downloaded update file
 If you don't want to compile the program by yourself, you can head over the <a href="https://github.com/phuongtran7/Trello2Monthly/releases">releases</a> tab a get a pre-compiled version.
 
 1. Install cpprestsdk, spdlog, rapidjson and cpptoml with Microsoft's <a href="https://github.com/Microsoft/vcpkg">vcpkg</a>.
-    * `./vcpkg install cpprestsdk`
-    * `./vcpkg install spdlog`
-    * `./vcpkg install rapidjson`
-    * `./vcpkg install cpptoml`
+    * `vcpkg install cpprestsdk`
+    * `vcpkg install spdlog`
+    * `vcpkg install rapidjson`
+    * `vcpkg install cpptoml`
 2. Clone the project: `git clone https://github.com/phuongtran7/Trello2Monthly.git`.
 3. Build the project.
 
