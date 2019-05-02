@@ -856,7 +856,7 @@ std::unordered_map<std::string, std::string> monthly::map_special_characters() c
 	return_map[R"($)"] = R"(\textdollar)";
 	return_map[R"(%)"] = R"(\percent)";
 	return_map[R"(&)"] = R"(\&)";
-	//return_map[R"(\)"] = R"(\textbackslash)";
+	return_map[R"(\)"] = R"(\textbackslash)";
 	return_map[R"(^)"] = R"(\textcircumflex)";
 	return_map[R"(_)"] = R"(\textunderscore)";
 	return_map[R"({)"] = R"(\textbraceleft)";
@@ -870,11 +870,31 @@ std::unordered_map<std::string, std::string> monthly::map_special_characters() c
 std::string monthly::sanitize_input(std::string input) const
 {
 	for (const auto& pair : special_characters_) {
-		const auto find = input.find(pair.first);
-		if (find != std::string::npos)
+
+		if (pair.first == R"(\)")
 		{
-			input.replace(find, pair.first.length(), pair.second);
+			const auto find = input.find(pair.first);
+
+			if (find != std::string::npos)
+			{
+				std::string temp{};
+				temp.push_back(input.at(find + 1));
+				// If the character after the slash is not a special character then replace the slash with double slashes
+				if (auto i = special_characters_.find(temp) == special_characters_.end())
+				{
+					input.replace(find, pair.first.length(), pair.second);
+				}
+			}
 		}
+		else
+		{
+			const auto find = input.find(pair.first);
+			if (find != std::string::npos)
+			{
+				input.replace(find, pair.first.length(), pair.second);
+			}
+		}
+		
 	}
 	return input;
 }
