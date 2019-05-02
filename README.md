@@ -9,12 +9,13 @@ The project also needs 7-Zip DLL to extract the data from downloaded update file
 ### Windows
 If you don't want to compile the program by yourself, you can head over the <a href="https://github.com/phuongtran7/Trello2Monthly/releases">releases</a> tab a get a pre-compiled version.
 
-1. Install cpprestsdk, spdlog and cpptoml with Microsoft's <a href="https://github.com/Microsoft/vcpkg">vcpkg</a>.
+1. Install cpprestsdk, spdlog, rapidjson and cpptoml with Microsoft's <a href="https://github.com/Microsoft/vcpkg">vcpkg</a>.
+    * `./vcpkg install cpprestsdk`
+    * `./vcpkg install spdlog`
+    * `./vcpkg install rapidjson`
+    * `./vcpkg install cpptoml`
 2. Clone the project: `git clone https://github.com/phuongtran7/Trello2Monthly.git`.
 3. Build the project.
-
-### Linux
-Coming soon.
 
 ## Preparing Trello
 Trello2Monthly expects a certain way of using Trello to successfully generate a Monthly Status. There are four important components in Trello: `Board`, `List`, `Card` and `Label`.
@@ -27,7 +28,7 @@ In the `List`, there can be as many `Cards` as required. These `Cards` represent
 
 Due to the nature of this work, there are many projects can run parallel with each other, therefore the `Labels` are used to mark which task belongs to which projects. A task can have multiple `Labels` and it will appear at multiple sections in the final PDF file. 
 
-There are two ways to report the work hours for each week. The first one is to use `Label`. Create a new `Label` called `Hour Breakdown` and then tag the cards that contain the work hour. For example: a `Card` named `Boeing 737: 10 Hours` with the tag `Hour Breakdown` will be put into the Hour Breakdown section of the PDF file. There can be as many `Cards` that tagged with `Hour Breakdown` as needed. Each of the `Cards` can represent a different project for that week.
+There are two ways to report the work hours for each week (`List`). The first one is to use `Label`. Create a new `Label` called `Hour Breakdown` and then tag the cards that contain the work hour. For example: a `Card` named `Boeing 737: 10 Hours` with the tag `Hour Breakdown` will be put into the Hour Breakdown section of the PDF file. There can be as many `Cards` that tagged with `Hour Breakdown` as needed. Each of the `Cards` can represent a different project for that week.
 
 The second way of reporting the hours is to manually specify the work hour on each of the tasks (`Cards`). To achieve this, we have to take advantage of the Power-Ups in Trello. Each of free user can have one Power-Up per board and we can use it to install `Custom Field Power-Ups`. This Power-Up allow the user to create a filed inside a `Card` and attach a value to each. In this case, we can create a `Custom Field` named `Work Hour` for the board. Then in each of the `Cards` in the week, the user can add the work hour for that particular `Card`. When generate the report, the program will combine all work hours of the `Cards` that have the same `Label`. For example, there are two `Cards` represent two complete tasks, these two `Cards` have the same label `Boeing 737`. The first `Card` has the custom field `Work Hour` with value of 6 and second one has the value of 4. When compiling the report, the program will add these two together and put in the `Hour Breakdown` section `Boeing 737: 10 Hours`. This allows the user to have a more fine-grained control over the task work hour.
 
@@ -35,7 +36,7 @@ The user can mix the two ways of reporting hour in a same `Board`, however, the 
 
 ## Usage
 1. Install <a href="https://miktex.org/">MiKTeX</a> and update it.
-2. (Optional) Install <a href="https://pandoc.org/installing.html">Pandoc</a> if Word fil is needed. 
+2. (Optional) Install <a href="https://pandoc.org/installing.html">Pandoc</a> if a Word file (.docx) is needed. 
 3. Get API Key and Token from <a href="https://developers.trello.com/docs/api-introduction">Trello</a>.
 4. Prepare a `config.toml` file with content:
 ```
@@ -46,7 +47,7 @@ author = "AUTHOR NAME"
 ```
 and then put it next to the compiled executable.
 
-4. Download and install <a href="https://www.7-zip.org/download.html">7-Zip</a> and copy `7z.dll` into executable's folder.
+4. Download, install <a href="https://www.7-zip.org/download.html">7-Zip</a> and copy `7z.dll` into executable's folder.
 5. Start the executable.
 
 ## Related Projects
