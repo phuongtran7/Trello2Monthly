@@ -1,6 +1,5 @@
 #include "pch.h"
 #include  "monthly.h"
-#include <wincrypt.h>
 
 using namespace utility;                    // Common utilities like string conversions
 using namespace web;                        // Common features like URIs.
@@ -877,7 +876,7 @@ std::string monthly::sanitize_input(std::string input) const
 		{
 			// Search for all backslash occurences in the string
 			// and store the index of the occurence
-			std::vector<int> positions; 
+			std::vector<size_t> positions; 
 			auto temp_index = input.find(pair.first);
 			while (temp_index != std::string::npos)
 			{
