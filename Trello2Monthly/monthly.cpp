@@ -1,5 +1,6 @@
 #include "pch.h"
 #include  "monthly.h"
+#include <wincrypt.h>
 
 using namespace utility;                    // Common utilities like string conversions
 using namespace web;                        // Common features like URIs.
@@ -852,17 +853,18 @@ std::unordered_map<std::string, std::string> monthly::map_special_characters() c
 {
 	std::unordered_map<std::string, std::string> return_map;
 
-	return_map[R"(#)"] = R"(\#)";
-	return_map[R"($)"] = R"(\textdollar)";
-	return_map[R"(%)"] = R"(\percent)";
-	return_map[R"(&)"] = R"(\&)";
-	return_map[R"(\)"] = R"(\textbackslash)";
-	return_map[R"(^)"] = R"(\textcircumflex)";
-	return_map[R"(_)"] = R"(\textunderscore)";
-	return_map[R"({)"] = R"(\textbraceleft)";
-	return_map[R"(|)"] = R"(\textbar)";
-	return_map[R"(})"] = R"(\textbraceright)";
-	return_map[R"(~)"] = R"(\textasciitilde)";
+	// All the sanitized texts should have a space after them
+	return_map[R"(#)"] = R"(\# )";
+	return_map[R"($)"] = R"(\textdollar )";
+	return_map[R"(%)"] = R"(\percent )";
+	return_map[R"(&)"] = R"(\& )";
+	return_map[R"(\)"] = R"(\textbackslash )"; 
+	return_map[R"(^)"] = R"(\textcircumflex )";
+	return_map[R"(_)"] = R"(\textunderscore )";
+	return_map[R"({)"] = R"(\textbraceleft )";
+	return_map[R"(|)"] = R"(\textbar )";
+	return_map[R"(})"] = R"(\textbraceright )";
+	return_map[R"(~)"] = R"(\textasciitilde )";
 
 	return return_map;
 }
@@ -873,16 +875,25 @@ std::string monthly::sanitize_input(std::string input) const
 
 		if (pair.first == R"(\)")
 		{
-			const auto find = input.find(pair.first);
-
-			if (find != std::string::npos)
+			// Search for all backslash occurences in the string
+			// and store the index of the occurence
+			std::vector<int> positions; 
+			auto temp_index = input.find(pair.first);
+			while (temp_index != std::string::npos)
 			{
+				positions.push_back(temp_index);
+				temp_index = input.find(pair.first, temp_index + pair.first.length());
+			}
+
+			for (auto i : positions)
+			{
+				// Loop through all the positions found
 				std::string temp{};
-				temp.push_back(input.at(find + 1));
+				temp.push_back(input.at(i + 1));
 				// If the character after the slash is not a special character then replace the slash with double slashes
-				if (auto i = special_characters_.find(temp) == special_characters_.end())
+				if (auto character = special_characters_.find(temp) == special_characters_.end())
 				{
-					input.replace(find, pair.first.length(), pair.second);
+					input.replace(i, pair.first.length(), pair.second);
 				}
 			}
 		}
