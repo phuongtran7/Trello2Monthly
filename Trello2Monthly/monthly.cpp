@@ -48,7 +48,7 @@ void monthly::shutdown()
 
 	// Clean up
 	spdlog::drop_all();
-	std::remove(fmt::format("{}", file_name_map_->at("tex")).c_str());
+	//std::remove(fmt::format("{}", file_name_map_->at("tex")).c_str());
 	std::remove(fmt::format("{}", file_name_map_->at("aux")).c_str());
 	std::remove(fmt::format("{}", file_name_map_->at("log")).c_str());
 	std::remove(fmt::format("{}", file_name_map_->at("out")).c_str());
@@ -852,17 +852,17 @@ std::unordered_map<std::string, std::string> monthly::map_special_characters() c
 {
 	std::unordered_map<std::string, std::string> return_map;
 
-	return_map[R"(#)"] = R"(\\#)";
-	return_map[R"($)"] = R"(\\textdollar)";
-	return_map[R"(%)"] = R"(\\percent)";
-	return_map[R"(&)"] = R"(\\&)";
-	return_map[R"(\)"] = R"(\\textbackslash)";
-	return_map[R"(^)"] = R"(\\textcircumflex)";
-	return_map[R"(_)"] = R"(\\textunderscore)";
-	return_map[R"({)"] = R"(\\textbraceleft)";
-	return_map[R"(|)"] = R"(\\textbar)";
-	return_map[R"(})"] = R"(\\textbraceright)";
-	return_map[R"(~)"] = R"(\\textasciitilde)";
+	return_map[R"(#)"] = R"(\#)";
+	return_map[R"($)"] = R"(\textdollar)";
+	return_map[R"(%)"] = R"(\percent)";
+	return_map[R"(&)"] = R"(\&)";
+	//return_map[R"(\)"] = R"(\textbackslash)";
+	return_map[R"(^)"] = R"(\textcircumflex)";
+	return_map[R"(_)"] = R"(\textunderscore)";
+	return_map[R"({)"] = R"(\textbraceleft)";
+	return_map[R"(|)"] = R"(\textbar)";
+	return_map[R"(})"] = R"(\textbraceright)";
+	return_map[R"(~)"] = R"(\textasciitilde)";
 
 	return return_map;
 }
@@ -870,10 +870,10 @@ std::unordered_map<std::string, std::string> monthly::map_special_characters() c
 std::string monthly::sanitize_input(std::string input) const
 {
 	for (const auto& pair : special_characters_) {
-		auto start_pos = 0;
-		while ((start_pos = input.find(pair.first)) != std::string::npos) {
-			input.replace(start_pos, 1, pair.second);
-			start_pos += 1;
+		const auto find = input.find(pair.first);
+		if (find != std::string::npos)
+		{
+			input.replace(find, pair.first.length(), pair.second);
 		}
 	}
 	return input;
