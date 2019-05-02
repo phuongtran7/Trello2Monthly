@@ -1,7 +1,7 @@
 #pragma once
 
 // Current file version
-constexpr auto version = "v1.0.9";
+constexpr auto version = "v1.1.0";
 
 class monthly
 {
@@ -29,7 +29,7 @@ class monthly
 	std::string author_;
 	std::optional<std::string> date_;
 	std::string filename_;
-
+	std::unordered_map<std::string, std::string> special_characters_;
 	// Create http_client to send the request.
 	web::http::client::http_client client_;
 	web::http::client::http_client update_client_;
@@ -71,6 +71,11 @@ class monthly
 	std::unordered_map<std::string, std::string> create_filename_map() const;
 
 	void process_data();
+
+	std::unordered_map<std::string, std::string> map_special_characters() const;
+
+	std::string sanitize_input(std::string input) const;
+
 public:
 	std::shared_ptr<spdlog::logger> console{};
 	std::shared_ptr<spdlog::logger> file{};
@@ -79,4 +84,5 @@ public:
 	void run();
 
 	void shutdown();
+	
 };
