@@ -48,7 +48,7 @@ void monthly::shutdown()
 
 	// Clean up
 	spdlog::drop_all();
-	//std::remove(fmt::format("{}", file_name_map_->at("tex")).c_str());
+	std::remove(fmt::format("{}", file_name_map_->at("tex")).c_str());
 	std::remove(fmt::format("{}", file_name_map_->at("aux")).c_str());
 	std::remove(fmt::format("{}", file_name_map_->at("log")).c_str());
 	std::remove(fmt::format("{}", file_name_map_->at("out")).c_str());
@@ -890,7 +890,7 @@ std::string monthly::sanitize_input(std::string input) const
 				std::string temp{};
 				temp.push_back(input.at(i + 1));
 				// If the character after the slash is not a special character then replace the slash with double slashes
-				if (auto character = special_characters_.find(temp) == special_characters_.end())
+				if (special_characters_.find(temp) == special_characters_.end())
 				{
 					input.replace(i, pair.first.length(), pair.second);
 				}
