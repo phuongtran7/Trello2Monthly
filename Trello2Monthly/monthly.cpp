@@ -631,7 +631,7 @@ bool monthly::start_console_log()
 	return true;
 }
 
-bool monthly::start_file_log(std::string filename)
+bool monthly::start_file_log(const std::string& filename)
 {
 	try
 	{
@@ -900,10 +900,11 @@ std::string monthly::sanitize_input(std::string input) const
 		}
 		else
 		{
-			const auto find = input.find(pair.first);
-			if (find != std::string::npos)
+			auto find = input.find(pair.first);
+			while (find != std::string::npos)
 			{
 				input.replace(find, pair.first.length(), pair.second);
+				find = input.find(pair.first);
 			}
 		}
 		

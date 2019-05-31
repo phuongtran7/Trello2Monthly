@@ -1,7 +1,7 @@
 #pragma once
 
 // Current file version
-constexpr auto version = "v1.1.1";
+constexpr auto version = "v1.1.2";
 
 class monthly
 {
@@ -64,7 +64,7 @@ class monthly
 
 	bool start_console_log();
 
-	bool start_file_log(std::string filename);
+	bool start_file_log(const std::string& filename);
 
 	std::optional<utility::string_t> parse_config();
 
