@@ -184,7 +184,7 @@ void monthly::extract_files() const
 	{
 		// Extract the zip file
 		const bit7z::Bit7zLibrary lib(L"7z.dll");
-		bit7z::BitExtractor extractor(lib, bit7z::BitFormat::Zip);
+		const bit7z::BitExtractor extractor(lib, bit7z::BitFormat::Zip);
 
 		// Create temporary folder to store extracted files
 		fs::create_directory("Temp");
