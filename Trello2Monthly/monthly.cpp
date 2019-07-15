@@ -21,7 +21,7 @@ void monthly::run()
 	console->info("+ Trello to Monthly. Current version {} +", version);
 	console->info("+++++++++++++++++++++++++++++++++++++++++++++");
 
-	auto update = check_for_update();
+	const auto update = check_for_update();
 	if (update.has_value())
 	{
 		download_update(update);
@@ -88,7 +88,7 @@ std::optional<std::string> monthly::check_for_update()
 	pplx::task<std::string> get_release_task = update_client_.request(methods::GET, builder.to_string())
 
 		// Handle response headers arriving.
-		.then([=](http_response response)
+		.then([=](const http_response& response)
 			{
 				if (response.status_code() != status_codes::OK)
 				{
@@ -100,7 +100,7 @@ std::optional<std::string> monthly::check_for_update()
 				return response.extract_utf8string();
 			})
 		// parse JSON
-				.then([=](std::string json_data)
+				.then([=](const std::string& json_data)
 					{
 						rapidjson::Document document;
 						document.Parse(json_data.c_str());
@@ -150,13 +150,13 @@ void monthly::download_update(std::optional<std::string> url)
 		const auto complete_url = conversions::to_string_t(url.value());
 		http_client download_client(complete_url);
 
-		auto download = download_client.request(methods::GET)
-			.then([=](http_response response)
+		const auto download = download_client.request(methods::GET)
+			.then([=](const http_response& response)
 				{
 					return response.body();
 				})
 
-			.then([=](istream is)
+			.then([=](const istream& is)
 				{
 					auto rwbuf = file_buffer<uint8_t>::open(U("Update.zip")).get();
 					// ReSharper disable once CppExpressionWithoutSideEffects
@@ -184,7 +184,7 @@ void monthly::extract_files() const
 	{
 		// Extract the zip file
 		const bit7z::Bit7zLibrary lib(L"7z.dll");
-		bit7z::BitExtractor extractor(lib, bit7z::BitFormat::Zip);
+		const bit7z::BitExtractor extractor(lib, bit7z::BitFormat::Zip);
 
 		// Create temporary folder to store extracted files
 		fs::create_directory("Temp");
@@ -297,7 +297,7 @@ bool monthly::check_has_custom_field(const std::string& board_id)
 	pplx::task<bool> request_task = client_.request(methods::GET, builder.to_string())
 
 		// Handle response headers arriving.
-		.then([=](http_response response)
+		.then([=](const http_response& response)
 			{
 				if (response.status_code() != status_codes::OK)
 				{
@@ -309,7 +309,7 @@ bool monthly::check_has_custom_field(const std::string& board_id)
 				return response.extract_utf8string();
 			})
 		// parse JSON
-				.then([=](std::string json_data)
+				.then([=](const std::string& json_data)
 					{
 						rapidjson::Document document;
 						document.Parse(json_data.c_str());
@@ -340,7 +340,7 @@ std::string monthly::get_active_boards()
 	pplx::task<std::string> request_task = client_.request(methods::GET, builder.to_string())
 
 		// Handle response headers arriving.
-		.then([=](http_response response)
+		.then([=](const http_response& response)
 			{
 				if (response.status_code() != status_codes::OK)
 				{
@@ -352,7 +352,7 @@ std::string monthly::get_active_boards()
 				return response.extract_utf8string();
 			})
 		// parse JSON
-				.then([=](std::string json_data)
+				.then([=](const std::string& json_data)
 					{
 						rapidjson::Document document;
 						document.Parse(json_data.c_str());
@@ -429,7 +429,7 @@ std::vector<monthly::list_info> monthly::get_lists(const std::string& board_id)
 	pplx::task<std::vector<list_info>> request_task = client_.request(methods::GET, builder.to_string())
 
 		// Handle response headers arriving.
-		.then([=](http_response response)
+		.then([=](const http_response& response)
 			{
 				if (response.status_code() != status_codes::OK)
 				{
@@ -441,7 +441,7 @@ std::vector<monthly::list_info> monthly::get_lists(const std::string& board_id)
 				return response.extract_utf8string();
 			})
 		// parse JSON
-				.then([=](std::string json_data)
+				.then([=](const std::string& json_data)
 					{
 						std::vector<list_info> list_id;
 
@@ -486,7 +486,7 @@ std::vector<monthly::card_info> monthly::get_card(const std::string& list_id)
 	pplx::task<std::vector<card_info>> request_task = client_.request(methods::GET, builder.to_string())
 
 		// Handle response headers arriving.
-		.then([=](http_response response)
+		.then([=](const http_response& response)
 			{
 				if (response.status_code() != status_codes::OK)
 				{
@@ -498,7 +498,7 @@ std::vector<monthly::card_info> monthly::get_card(const std::string& list_id)
 				return response.extract_utf8string();
 			})
 		// parse JSON
-				.then([=](std::string json_data)
+				.then([=](const std::string& json_data)
 					{
 						std::vector<card_info> cards;
 
@@ -555,7 +555,7 @@ std::vector<std::string> monthly::get_labels(const std::string& board_id)
 	pplx::task<std::vector<std::string>> request_task = client_.request(methods::GET, builder.to_string())
 
 		// Handle response headers arriving.
-		.then([=](http_response response)
+		.then([=](const http_response& response)
 			{
 				if (response.status_code() != status_codes::OK)
 				{
@@ -567,7 +567,7 @@ std::vector<std::string> monthly::get_labels(const std::string& board_id)
 				return response.extract_utf8string();
 			})
 		// parse JSON
-				.then([=](std::string json_data)
+				.then([=](const std::string& json_data)
 					{
 						std::vector<std::string> labels;
 
