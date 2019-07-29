@@ -4,7 +4,7 @@
 #include "pch.h"
 #include "monthly.h"
 
-int main(int argc, char* argv[])
+int main()
 {
 	monthly new_month;
 	new_month.run();

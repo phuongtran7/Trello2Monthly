@@ -1,7 +1,7 @@
 #ifndef PCH_H
 #define PCH_H
 
-#define  _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING
+//#define  _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING
 
 #include <iostream>
 #include <cpprest/http_client.h>

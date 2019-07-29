@@ -21,7 +21,9 @@ void monthly::run()
 	console->info("+ Trello to Monthly. Current version {} +", version);
 	console->info("+++++++++++++++++++++++++++++++++++++++++++++");
 
-	auto update = check_for_update();
+	process_data();
+
+	/*auto update = check_for_update();
 	if (update.has_value())
 	{
 		download_update(update);
@@ -33,7 +35,7 @@ void monthly::run()
 	{
 		fs::remove("Updater.exe.Trello_Old");
 		process_data();
-	}
+	}*/
 }
 
 void monthly::shutdown()
