@@ -1,22 +1,19 @@
 # Trello2Monthly
 <h4 align="center">A command line program to build Monthly Status Report.</h4>
 
-Trello2Monthly is a command line program to generate PDF and Word files from Trello. Trello2Monthly uses <a href="https://github.com/Microsoft/cpprestsdk">cpprestsdk</a> and <a href="https://github.com/gabime/spdlog">spdlog</a>, <a href="https://github.com/Tencent/rapidjson">RapidJSON</a>, <a href="https://github.com/skystrife/cpptoml">cpptoml</a> and <a href="https://github.com/rikyoz/bit7z">bit7z</a>.
-
-The project also needs 7-Zip DLL to extract the data from downloaded update files.
+Trello2Monthly is a command line program to generate PDF and Word files from Trello. Trello2Monthly uses <a href="https://github.com/Microsoft/cpprestsdk">cpprestsdk</a> and <a href="https://github.com/gabime/spdlog">spdlog</a>, <a href="https://github.com/Tencent/rapidjson">RapidJSON</a>, <a href="https://github.com/skystrife/cpptoml">cpptoml</a>.
 
 ## Installation
 ### Windows
 If you don't want to compile the program by yourself, you can head over the <a href="https://github.com/phuongtran7/Trello2Monthly/releases">releases</a> tab a get a pre-compiled version.
 
 1. Install cpprestsdk, spdlog, rapidjson and cpptoml with Microsoft's <a href="https://github.com/Microsoft/vcpkg">vcpkg</a>.
-    * `vcpkg install cpprestsdk`
-    * `vcpkg install spdlog`
-    * `vcpkg install rapidjson`
-    * `vcpkg install cpptoml`
+    * `vcpkg install cpprestsdk:x64-windows-static`
+    * `vcpkg install spdlog:x64-windows-static`
+    * `vcpkg install rapidjson:x64-windows-static`
+    * `vcpkg install cpptoml:x64-windows-static`
 2. Clone the project: `git clone https://github.com/phuongtran7/Trello2Monthly.git`.
-3. Download or build <a href="https://github.com/rikyoz/bit7z">bit7z</a> library and correct the link path in project.
-4. Build the project.
+3. Build the project.
 
 ## Preparing Trello
 Trello2Monthly expects a certain way of using Trello to successfully generate a Monthly Status. There are four important components in Trello: `Board`, `List`, `Card` and `Label`.
@@ -50,8 +47,7 @@ author = "AUTHOR NAME"
 ```
 and then put it next to the compiled executable.
 
-4. Download, install <a href="https://www.7-zip.org/download.html">7-Zip</a> and copy `7z.dll` into executable's folder.
-5. Start the executable.
+4. Start the executable.
 
 ## Related Projects
 1. <a href="https://github.com/phuongtran7/Trello_2_Monthly_CMake">Trello_2_Monthly_CMake</a>: A test project trying to get Trello2Monthly to work on Linux.

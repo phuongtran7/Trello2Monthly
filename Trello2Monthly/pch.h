@@ -1,8 +1,7 @@
 #ifndef PCH_H
 #define PCH_H
 
-//#define  _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING
-
+#pragma once
 #include <iostream>
 #include <cpprest/http_client.h>
 #include <cpprest/filestream.h>
@@ -19,7 +18,5 @@
 #include <regex>
 #include <filesystem>
 #include <cstdio>
-#include <bit7zlibrary.hpp>
-#include <bitextractor.hpp>
 #include <algorithm>
 #endif //PCH_H
