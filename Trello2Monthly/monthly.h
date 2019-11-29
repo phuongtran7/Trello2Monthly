@@ -1,7 +1,7 @@
 #pragma once
 
 // Current file version
-constexpr auto version = "v1.1.5";
+constexpr auto version = "v1.1.6";
 
 class monthly
 {

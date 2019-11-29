@@ -48,7 +48,6 @@ void monthly::shutdown()
 std::vector<std::string> monthly::split_description(const std::string& input) const
 {
 	const std::regex expression(R"(\n\n)");
-
 	std::vector<std::string> elems;
 
 	for (std::sregex_token_iterator iterator(input.begin(), input.end(), expression, -1); iterator != std::sregex_token_iterator(); ++iterator)
@@ -63,7 +62,6 @@ std::vector<std::string> monthly::split_description(const std::string& input) co
 std::optional<std::string> monthly::get_date(const std::string& board_name) const
 {
 	const std::regex expression(R"(\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ach)|Apr(?:il)|May|Jun(?:e)|Jul(?:y)|Aug(?:ust)|Sep(?:tember)|Oct(?:ober)|Nov(?:ember)|Dec(?:ember)?) (?:19[7-9]\d|2\d{3})(?=\D|$))");
-
 	std::smatch match;
 
 	if (std::regex_search(board_name, match, expression))
